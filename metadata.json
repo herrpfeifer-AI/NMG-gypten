@@ -1,0 +1,7 @@
+{
+  "name": "Expedition Altes Ägypten: Mit Woozle auf Zeitreise",
+  "description": "Interaktive Lern-App für Schüler:innen zum Video 'Was macht Woozle im alten Ägypten?' mit Video-Station, Textbaustein-Aufgaben, Quiz, Gruppenarbeit, Belohnungssystem und Lehrer-Cockpit.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
