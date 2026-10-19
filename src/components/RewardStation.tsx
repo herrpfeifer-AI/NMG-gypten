@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Trophy, 
   Award, 
@@ -14,13 +14,30 @@ import {
   PartyPopper,
   Send,
   Lightbulb,
-  BookOpen
+  BookOpen,
+  Pencil,
+  Camera,
+  Laptop,
+  ArrowRight,
+  Theater
 } from 'lucide-react';
 import { useProgress } from '../context/ProgressContext';
 import { BADGES } from '../data/learningData';
+import { HieroglyphGame } from './HieroglyphGame';
+import { NextStepsModal } from './NextStepsModal';
 
-export const RewardStation: React.FC = () => {
+interface RewardStationProps {
+  onOpenPhotoWall?: () => void;
+  onOpenScoreboard?: () => void;
+}
+
+export const RewardStation: React.FC<RewardStationProps> = ({
+  onOpenPhotoWall,
+  onOpenScoreboard
+}) => {
   const { student, triggerCelebration, submitResultsToTeacher } = useProgress();
+  const [activeTab, setActiveTab] = useState<'certificate' | 'hieroglyphs'>('certificate');
+  const [isNextStepsModalOpen, setIsNextStepsModalOpen] = useState(false);
 
   const getBadgeIcon = (iconName: string) => {
     switch (iconName) {
@@ -73,19 +90,65 @@ export const RewardStation: React.FC = () => {
           Für jede erfolgreich abgeschlossene Lerneinheit hast du ein heiliges Artefakt des alten Ägyptens errungen.
         </p>
 
-        <div className="pt-2">
+        <div className="pt-2 flex items-center justify-center gap-2 flex-wrap">
           <button
             onClick={triggerCelebration}
-            className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-bold rounded-xl shadow-lg shadow-amber-500/25 text-xs sm:text-sm inline-flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
+            className="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-bold rounded-xl shadow-lg shadow-amber-500/25 text-xs inline-flex items-center gap-2 transition-transform hover:scale-105 active:scale-95"
           >
             <Sparkles className="w-4 h-4" />
-            <span>Erfolge mit Fanfare feiern!</span>
+            <span>Fanfare abspielen!</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab(activeTab === 'certificate' ? 'hieroglyphs' : 'certificate')}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 font-bold rounded-xl text-xs inline-flex items-center gap-2 transition-all"
+          >
+            {activeTab === 'certificate' ? (
+              <>
+                <span>𓁹 Zum Hieroglyphen-Spiel</span>
+              </>
+            ) : (
+              <>
+                <Scroll className="w-4 h-4" />
+                <span>Zurück zur Urkunde</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Tab Switcher Pills */}
+        <div className="flex items-center justify-center gap-2 pt-2">
+          <button
+            onClick={() => setActiveTab('certificate')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+              activeTab === 'certificate'
+                ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold'
+                : 'bg-slate-800/80 text-slate-400 hover:text-white'
+            }`}
+          >
+            <Scroll className="w-4 h-4" />
+            <span>1. Schätze & Urkunde</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('hieroglyphs')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+              activeTab === 'hieroglyphs'
+                ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md font-extrabold'
+                : 'bg-slate-800/80 text-slate-400 hover:text-white'
+            }`}
+          >
+            <span className="text-sm">𓁹</span>
+            <span>2. Hieroglyphen-Spiel & Zeichnungsheft</span>
           </button>
         </div>
       </div>
 
-      {/* Badges Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      {activeTab === 'hieroglyphs' ? (
+        <HieroglyphGame />
+      ) : (
+        <>
+          {/* Badges Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {BADGES.map((badge) => {
           const Icon = getBadgeIcon(badge.icon);
           const isUnlocked = student.badges.includes(badge.id) || (badge.id === 'badge-master' && allCompleted);
@@ -327,8 +390,149 @@ export const RewardStation: React.FC = () => {
 
           </div>
         </div>
-      </div>
+        {/* SECTION: WIE GEHT ES JETZT WEITER? (3 MÖGLICHKEITEN) */}
+        <div className="mt-8 bg-gradient-to-br from-indigo-950/80 via-slate-900 to-purple-950/80 border-2 border-amber-500/50 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-yellow-600 p-0.5 shadow-md shrink-0 flex items-center justify-center">
+                <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-amber-400 font-display font-bold text-xl">
+                  𓋹
+                </div>
+              </div>
+              <div>
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold uppercase tracking-wider border border-amber-500/30">
+                  Geschafft! • Deine nächsten Aufgaben
+                </span>
+                <h3 className="font-display font-extrabold text-xl sm:text-2xl text-amber-200 mt-1">
+                  Wie geht es weiter? (3 Möglichkeiten)
+                </h3>
+              </div>
+            </div>
 
-    </div>
+            <button
+              onClick={() => setIsNextStepsModalOpen(true)}
+              className="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-2 shadow-md transition-all hover:scale-105"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Fenster im Vollbild öffnen</span>
+            </button>
+          </div>
+
+          <p className="text-xs sm:text-sm text-slate-300">
+            Du hast deine Ägyptologen-Urkunde erhalten, <strong className="text-amber-300">{student.name}</strong>! Nun hast du die freie Wahl zwischen 3 spannenden Möglichkeiten:
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            {/* OPTION 1: BÜCHER LESEN & ONENOTE */}
+            <div className="bg-gradient-to-br from-emerald-950/60 to-slate-950 border border-emerald-500/40 rounded-2xl p-5 flex flex-col justify-between space-y-4 shadow-lg hover:border-emerald-400 transition-all group">
+              <div className="space-y-3">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 group-hover:scale-110 transition-transform">
+                  <BookOpen className="w-6 h-6" />
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-400 block">
+                    1. Möglichkeit
+                  </span>
+                  <h4 className="font-display font-bold text-base text-emerald-200 mt-0.5">
+                    Bücher lesen & OneNote
+                  </h4>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Gehe leise in die <strong>Leseecke</strong> im Klassenzimmer und lies in den Sachbüchern über das alte Ägypten – oder öffne dein Tablet (OneNote) und arbeite an deinen Notizen weiter.
+                </p>
+              </div>
+
+              <div className="pt-2 border-t border-emerald-500/20 text-[11px] font-semibold text-emerald-300 flex items-center gap-1.5">
+                <Laptop className="w-3.5 h-3.5" />
+                <span>Leseecke / OneNote</span>
+              </div>
+            </div>
+
+            {/* OPTION 2: HIEROGLYPHEN-SPIEL */}
+            <div className="bg-gradient-to-br from-purple-950/60 to-slate-950 border border-purple-500/40 rounded-2xl p-5 flex flex-col justify-between space-y-4 shadow-lg hover:border-purple-400 transition-all group">
+              <div className="space-y-3">
+                <div className="w-12 h-12 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30 group-hover:scale-110 transition-transform">
+                  <span className="text-2xl font-display text-amber-300">𓁹</span>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-purple-400 block">
+                    2. Möglichkeit
+                  </span>
+                  <h4 className="font-display font-bold text-base text-purple-200 mt-0.5">
+                    Hieroglyphen-Spiel & Zeichnungsheft
+                  </h4>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Schreibe deinen Namen in eine <strong>königliche Kartusche</strong>, teste das Übersetzungstool und zeichne die Symbole in dein <strong>Zeichnungsheft</strong> ab!
+                </p>
+              </div>
+
+              <button
+                onClick={() => setActiveTab('hieroglyphs')}
+                className="w-full py-2.5 px-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all hover:scale-102"
+              >
+                <span>Hieroglyphen-Studio öffnen</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* OPTION 3: THEATER VON ANDEREN KINDERN ANSCHAUEN */}
+            <div className="bg-gradient-to-br from-amber-950/60 to-slate-950 border border-amber-500/40 rounded-2xl p-5 flex flex-col justify-between space-y-4 shadow-lg hover:border-amber-400 transition-all group">
+              <div className="space-y-3">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 group-hover:scale-110 transition-transform">
+                  <Theater className="w-6 h-6" />
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-amber-400 block">
+                    3. Möglichkeit
+                  </span>
+                  <h4 className="font-display font-bold text-base text-amber-200 mt-0.5">
+                    Theater anderer Kinder anschauen
+                  </h4>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Schau leise bei den <strong>Theater-Aufführungen anderer Gruppen</strong> im Zimmer zu oder wirf einen Blick auf die <strong>Klassen-Fotowand</strong>!
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {onOpenPhotoWall && (
+                  <button
+                    onClick={onOpenPhotoWall}
+                    className="w-full py-2 px-3 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>Fotowand öffnen</span>
+                  </button>
+                )}
+                {onOpenScoreboard && (
+                  <button
+                    onClick={onOpenScoreboard}
+                    className="w-full py-2 px-3 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <Trophy className="w-3.5 h-3.5" />
+                    <span>Klassen-Punkte prüfen</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </>
+  )}
+
+  {/* Next Steps Modal Dialog */}
+  <NextStepsModal
+    isOpen={isNextStepsModalOpen}
+    onClose={() => setIsNextStepsModalOpen(false)}
+    onOpenHieroglyphs={() => setActiveTab('hieroglyphs')}
+    onOpenPhotoWall={onOpenPhotoWall || (() => {})}
+    onOpenScoreboard={onOpenScoreboard || (() => {})}
+  />
+
+</div>
   );
 };

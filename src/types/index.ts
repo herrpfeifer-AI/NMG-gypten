@@ -105,6 +105,8 @@ export interface StudentProgress {
     theaterPartner1Role?: string;
     theaterPartner2Role?: string;
     theaterNotes?: string;
+    theaterPhoto?: string;
+    theaterPhotoTimestamp?: string;
     feedbackReceived?: {
       fromGroup: string;
       keywordsMentioned: string[];
@@ -144,4 +146,13 @@ export interface TeacherSettings {
   allowStudentSolutionView: boolean;
   customYoutubeId: string;
   classGroup: string;
+}
+
+export interface ClassTheaterPhoto {
+  id: string;
+  groupNames: string;
+  topicTitle: string;
+  photoUrl: string;
+  timestamp: string;
+  applauseCount: number;
 }

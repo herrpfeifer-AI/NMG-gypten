@@ -354,6 +354,26 @@ export const QuizStation: React.FC = () => {
             })}
           </div>
 
+          {/* Teacher Pairing Instruction Banner */}
+          <div className="bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-amber-500/20 border-2 border-amber-400/60 rounded-2xl p-5 text-left space-y-2 shadow-lg">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-bold text-lg shrink-0 shadow">
+                👥
+              </div>
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300">
+                  Wichtige Anweisung für Klasse 5b
+                </span>
+                <h4 className="font-display font-bold text-base text-amber-200">
+                  Gehe jetzt zur Lehrperson!
+                </h4>
+              </div>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-100 leading-relaxed font-medium">
+              Glückwunsch, du hast das Wissens-Quiz beendet! Gehe jetzt nach vorne zu <strong>Herr Pfeifer oder Frau Escher</strong>. Die Lehrperson teilt dich direkt mit einer Mitschülerin oder einem Mitschüler in eine <strong>2er-Gruppe</strong> ein!
+            </p>
+          </div>
+
           {/* RAMSES GATEKEEPER IF 3 OR MORE ERRORS */}
           {needsRamsesCode ? (
             <div className="bg-rose-950/60 border-2 border-rose-500/60 rounded-3xl p-5 sm:p-6 space-y-4 text-left shadow-xl">

@@ -6,8 +6,6 @@ import {
   RotateCcw, 
   Sparkles, 
   ChevronRight, 
-  Eye, 
-  EyeOff, 
   Plus, 
   CheckCircle2, 
   Award, 
@@ -39,7 +37,6 @@ export const TextModuleStation: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'cloze' | 'questions'>('cloze');
   const [selectedStoryIndex, setSelectedStoryIndex] = useState<number>(0);
   const [selectedQuestionId, setSelectedQuestionId] = useState<number>(1);
-  const [showQuestionSolution, setShowQuestionSolution] = useState<{ [qId: number]: boolean }>({});
   const [showClozeValidation, setShowClozeValidation] = useState<boolean>(false);
   const [shuffleSeeds, setShuffleSeeds] = useState<{ [storyId: string]: number }>({});
 
@@ -118,10 +115,6 @@ export const TextModuleStation: React.FC = () => {
     }
     markTextCompleted();
     setCurrentStation('quiz');
-  };
-
-  const toggleSolution = (qId: number) => {
-    setShowQuestionSolution(prev => ({ ...prev, [qId]: !prev[qId] }));
   };
 
   // Render template with interactive gaps
@@ -362,21 +355,6 @@ export const TextModuleStation: React.FC = () => {
                   <Check className="w-4 h-4" />
                   <span>Antworten prüfen</span>
                 </button>
-
-                {(teacherSettings.allowStudentSolutionView || isCurrentStorySolved) && (
-                  <button
-                    onClick={() => {
-                      gapsKeys.forEach(k => {
-                        handleInsertWord(k, currentStory.gaps[k]);
-                      });
-                      setShowClozeValidation(true);
-                      sounds.playCorrect();
-                    }}
-                    className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-300 font-semibold text-xs rounded-xl border border-amber-500/20"
-                  >
-                    Musterlösung einsetzen
-                  </button>
-                )}
               </div>
 
               {/* Direct Next Button when current story is solved */}
@@ -530,50 +508,31 @@ export const TextModuleStation: React.FC = () => {
               />
             </div>
 
-            {/* Model Solution Reveal Toggle */}
-            <div className="border-t border-slate-800 pt-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={() => toggleSolution(currentQuestion.id)}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold flex items-center gap-2 border border-slate-700"
-                >
-                  {showQuestionSolution[currentQuestion.id] ? (
-                    <>
-                      <EyeOff className="w-3.5 h-3.5" />
-                      <span>Musterlösung verbergen</span>
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Musterlösung vergleichen</span>
-                    </>
-                  )}
-                </button>
+            {/* Question Navigation */}
+            <div className="border-t border-slate-800 pt-4 flex items-center justify-between">
+              <span className="text-xs text-slate-400">
+                Formuliere deine Antwort sorgfältig mit den Bausteinen.
+              </span>
 
-                <div className="flex items-center gap-2">
-                  {selectedQuestionId < 8 && (
-                    <button
-                      onClick={() => setSelectedQuestionId(prev => prev + 1)}
-                      className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1"
-                    >
-                      <span>Nächste Frage</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
+              <div className="flex items-center gap-2">
+                {selectedQuestionId > 1 && (
+                  <button
+                    onClick={() => setSelectedQuestionId(prev => prev - 1)}
+                    className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                  >
+                    Vorherige Frage
+                  </button>
+                )}
+                {selectedQuestionId < 8 && (
+                  <button
+                    onClick={() => setSelectedQuestionId(prev => prev + 1)}
+                    className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1 shadow-sm"
+                  >
+                    <span>Nächste Frage</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
-
-              {showQuestionSolution[currentQuestion.id] && (
-                <div className="bg-amber-950/30 border border-amber-500/30 rounded-2xl p-4 space-y-1.5 text-xs">
-                  <div className="flex items-center gap-1.5 text-amber-300 font-bold">
-                    <BookOpen className="w-3.5 h-3.5" />
-                    <span>Offizielle Musterlösung:</span>
-                  </div>
-                  <p className="text-slate-200 leading-relaxed">
-                    {currentQuestion.sampleSolution}
-                  </p>
-                </div>
-              )}
             </div>
 
           </div>

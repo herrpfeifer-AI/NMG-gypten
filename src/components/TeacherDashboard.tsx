@@ -68,7 +68,7 @@ export const TeacherDashboard: React.FC = () => {
     id: string;
     partner1: string;
     partner2: string;
-    taskChoice?: 'erfindungen' | 'puzzle' | 'kreativ';
+    taskChoice?: StudentProgress['groupTaskChoice'];
     completed: boolean;
     notes: StudentProgress['groupNotes'];
     lastUpdated: string;

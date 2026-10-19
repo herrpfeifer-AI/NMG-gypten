@@ -11,6 +11,8 @@ import { TeacherDashboard } from './components/TeacherDashboard';
 import { SolutionModal } from './components/SolutionModal';
 import { IntroOverviewModal } from './components/IntroOverviewModal';
 import { StudentSelectModal } from './components/StudentSelectModal';
+import { ClassScoreboardModal } from './components/ClassScoreboardModal';
+import { PhotoWallModal } from './components/PhotoWallModal';
 
 const STORAGE_OVERVIEW_SEEN = 'woozle_intro_overview_seen_v3';
 const STORAGE_NAME_SELECTED = 'woozle_student_name_selected_v3';
@@ -26,6 +28,8 @@ const AppContent: React.FC = () => {
   } = useProgress();
 
   const [isSolutionModalOpen, setIsSolutionModalOpen] = useState(false);
+  const [isScoreboardOpen, setIsScoreboardOpen] = useState(false);
+  const [isPhotoWallOpen, setIsPhotoWallOpen] = useState(false);
 
   // Station overview is shown on first visit
   const [isOverviewModalOpen, setIsOverviewModalOpen] = useState<boolean>(() => {
@@ -85,6 +89,8 @@ const AppContent: React.FC = () => {
         onOpenSolutions={() => setIsSolutionModalOpen(true)} 
         onOpenOverview={() => setIsOverviewModalOpen(true)}
         onOpenNameSelect={() => setIsNameSelectModalOpen(true)}
+        onOpenScoreboard={() => setIsScoreboardOpen(true)}
+        onOpenPhotoWall={() => setIsPhotoWallOpen(true)}
         onResetApp={handleResetApp}
       />
 
@@ -101,8 +107,15 @@ const AppContent: React.FC = () => {
             {currentStation === 'video' && <VideoStation />}
             {currentStation === 'textbausteine' && <TextModuleStation />}
             {currentStation === 'quiz' && <QuizStation />}
-            {currentStation === 'gruppenarbeit' && <GroupStation />}
-            {currentStation === 'belohnungen' && <RewardStation />}
+            {currentStation === 'gruppenarbeit' && (
+              <GroupStation onOpenPhotoWall={() => setIsPhotoWallOpen(true)} />
+            )}
+            {currentStation === 'belohnungen' && (
+              <RewardStation 
+                onOpenPhotoWall={() => setIsPhotoWallOpen(true)}
+                onOpenScoreboard={() => setIsScoreboardOpen(true)}
+              />
+            )}
           </>
         )}
       </main>
@@ -123,6 +136,22 @@ const AppContent: React.FC = () => {
         onSelectStudent={handleSelectStudent}
         currentStudentName={student.name}
         canCloseWithoutSelect={Boolean(student.name && localStorage.getItem(STORAGE_NAME_SELECTED))}
+      />
+
+      {/* Class Scoreboard Modal (Points & Ranking for the whole class) */}
+      <ClassScoreboardModal
+        isOpen={isScoreboardOpen}
+        onClose={() => setIsScoreboardOpen(false)}
+      />
+
+      {/* Class Photo Wall Modal (Pinboard with Theater Poses) */}
+      <PhotoWallModal
+        isOpen={isPhotoWallOpen}
+        onClose={() => setIsPhotoWallOpen(false)}
+        onOpenGroupStation={() => {
+          setIsPhotoWallOpen(false);
+          setCurrentStation('gruppenarbeit');
+        }}
       />
 
       {/* Modal Solution Handbook */}

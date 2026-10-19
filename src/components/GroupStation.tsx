@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Users, 
   Sparkles, 
@@ -15,13 +15,25 @@ import {
   CheckSquare,
   Square,
   MessageSquare,
-  Laptop
+  Laptop,
+  Camera,
+  Upload,
+  Trash2,
+  Image as ImageIcon,
+  Lightbulb,
+  Video,
+  X
 } from 'lucide-react';
 import { useProgress } from '../context/ProgressContext';
 import { THEATER_TOPICS, TheaterTopicDefinition } from '../data/learningData';
+import { CLASS_STUDENTS } from '../types';
 import { sounds } from '../utils/soundEffects';
 
-export const GroupStation: React.FC = () => {
+interface GroupStationProps {
+  onOpenPhotoWall?: () => void;
+}
+
+export const GroupStation: React.FC<GroupStationProps> = ({ onOpenPhotoWall }) => {
   const { 
     student, 
     studentsList,
@@ -31,6 +43,7 @@ export const GroupStation: React.FC = () => {
     markGroupCompleted, 
     assignPresentationGroup,
     saveTheaterFeedback,
+    saveTheaterPhoto,
     unlockGroupWithCheopsCode,
     setCurrentStation 
   } = useProgress();
@@ -41,22 +54,18 @@ export const GroupStation: React.FC = () => {
   const [partner2, setPartner2] = useState<string>(student.groupPartner2 || '');
   const [isEditingTeam, setIsEditingTeam] = useState<boolean>(!student.groupPartner1 || !student.groupPartner2);
 
-  // Filter eligible partners: must have completed Station 1-3 AND not be in any 2er team yet
-  const eligiblePartners = studentsList.filter(s => 
-    s.name !== currentStudentName &&
-    s.videoWatched &&
-    s.textCompleted &&
-    s.quizCompleted &&
-    !s.groupPartner1 &&
-    !s.groupPartner2
-  );
-
-  // Set default partner2 if empty and eligible partners exist
+  // Default partner 2 if empty
   useEffect(() => {
-    if (!partner2 && eligiblePartners.length > 0) {
-      setPartner2(eligiblePartners[0].name);
+    if (!partner2) {
+      const firstAvailable = CLASS_STUDENTS.find(n => n !== partner1);
+      if (firstAvailable) setPartner2(firstAvailable);
     }
-  }, [eligiblePartners.length, partner2]);
+  }, [partner1, partner2]);
+
+  // 4er-Group assignment partner selection
+  const remainingStudents = CLASS_STUDENTS.filter(n => n !== partner1 && n !== partner2);
+  const [assignPartnerA, setAssignPartnerA] = useState<string>(remainingStudents[0] || 'Sofia');
+  const [assignPartnerB, setAssignPartnerB] = useState<string>(remainingStudents[1] || 'Omar');
 
   // Cheops verification state (teacher code)
   const [codeTeacherInput, setCodeTeacherInput] = useState('');
@@ -80,12 +89,111 @@ export const GroupStation: React.FC = () => {
   const isWaitingForOtherTeam = student.groupCompleted && !student.assignedPresentationGroup?.partner1;
   const hasAssignedGroup = Boolean(student.assignedPresentationGroup?.partner1);
 
-  // Feedback form state (given to the other team)
+  // Photo upload & camera capture state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [isCapturingLive, setIsCapturingLive] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+
+  const handleStartLiveCamera = async () => {
+    setPhotoError(null);
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        fileInputRef.current?.click();
+        return;
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } 
+      });
+      mediaStreamRef.current = stream;
+      setIsCapturingLive(true);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+    } catch (err) {
+      console.warn('getUserMedia failed, falling back to file input camera', err);
+      fileInputRef.current?.click();
+    }
+  };
+
+  const handleStopLiveCamera = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(t => t.stop());
+      mediaStreamRef.current = null;
+    }
+    setIsCapturingLive(false);
+  };
+
+  const handleTakeLiveSnapshot = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      saveTheaterPhoto(dataUrl);
+      handleStopLiveCamera();
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setPhotoError('Bitte wähle ein Bild (JPG/PNG).');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 800;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, w, h);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          saveTheaterPhoto(compressedDataUrl);
+          setPhotoError(null);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDeletePhoto = () => {
+    sounds.playPop();
+    saveTheaterPhoto('');
+  };
+
+  // Feedback form state (given to the other team) - STARTS EMPTY, EXAMPLES SERVE AS INSPIRATION ONLY
   const [feedbackRating, setFeedbackRating] = useState<number>(5);
   const [feedbackCheckedKws, setFeedbackCheckedKws] = useState<string[]>([]);
-  const [feedbackPraise, setFeedbackPraise] = useState<string>('Alle Schlagwörter super eingebaut und lebendig gespielt!');
-  const [feedbackTip, setFeedbackTip] = useState<string>('Noch etwas lauter und deutlicher sprechen.');
-  const [feedbackSubmitted, setFeedbackSubmitted] = useState<boolean>(Boolean(student.groupNotes?.feedbackGiven));
+  const [feedbackPraise, setFeedbackPraise] = useState<string>(student.groupNotes?.feedbackGiven?.praise || '');
+  const [feedbackTip, setFeedbackTip] = useState<string>(student.groupNotes?.feedbackGiven?.tip || '');
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState<boolean>(Boolean(student.groupNotes?.feedbackGiven?.praise));
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
   const handleConfirmTeam = (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,11 +229,16 @@ export const GroupStation: React.FC = () => {
 
   const handleSubmitFeedback = (e: React.FormEvent) => {
     e.preventDefault();
+    if (feedbackPraise.trim().length < 6 || feedbackTip.trim().length < 6) {
+      setFeedbackError('Bitte formuliert ein eigenes Lob (mindestens 6 Zeichen) und einen eigenen Tipp!');
+      return;
+    }
+    setFeedbackError(null);
     saveTheaterFeedback({
       keywordsMentioned: feedbackCheckedKws,
       rating: feedbackRating,
-      praise: feedbackPraise,
-      tip: feedbackTip
+      praise: feedbackPraise.trim(),
+      tip: feedbackTip.trim()
     });
     setFeedbackSubmitted(true);
     sounds.playFanfare();
@@ -181,7 +294,7 @@ export const GroupStation: React.FC = () => {
         </div>
       </div>
 
-      {/* STEP 1: 2ER-TEAM REGISTRATION OR WAITING FOR FASTEST CHILD */}
+      {/* STEP 1: 2ER-TEAM REGISTRATION */}
       {isEditingTeam ? (
         <div className="bg-slate-900 border-2 border-purple-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 max-w-2xl mx-auto">
           <div className="text-center space-y-2">
@@ -189,100 +302,69 @@ export const GroupStation: React.FC = () => {
               <Users className="w-7 h-7" />
             </div>
             <h3 className="font-display font-bold text-xl text-amber-200">
-              2er-Team Bildung: Klasse 5b
+              2er-Team Einteilung: Klasse 5b
             </h3>
             <p className="text-xs sm:text-sm text-slate-300">
-              Für die 2er-Gruppe können nur Kinder gewählt werden, die <strong>Aufgabe 1 bis 3 bereits gelöst</strong> haben und noch in keinem anderen Team sind.
+              Gehe zur Lehrperson (Herr Pfeifer & Frau Escher). Ihr werdet dort in ein 2er-Team eingeteilt.
             </p>
           </div>
 
-          {eligiblePartners.length === 0 && !student.groupPartner2 ? (
-            /* FASTEST CHILD WAITING BOX */
-            <div className="bg-amber-950/30 border-2 border-amber-500/40 rounded-2xl p-6 text-center space-y-4">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 text-amber-400">
-                <Sparkles className="w-6 h-6 animate-pulse" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="font-display font-bold text-base text-amber-200">
-                  Du bist superschnell! 🌟
-                </h4>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-md mx-auto">
-                  Aktuell hat noch kein anderes Kind Station 1 bis 3 abgeschlossen (oder alle fertigen Kinder haben bereits ein 2er-Team gebildet).
-                </p>
+          {/* Teacher Directive Notice */}
+          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200/90 flex items-start gap-3">
+            <UserCheck className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <p className="leading-relaxed">
+              <strong>Anweisung:</strong> Melde dich vorne bei der Lehrkraft. Sie teilt dir dein/e Teampartner:in zu. Wählt anschließend den Namen hier aus, um direkt gemeinsam loszulegen!
+            </p>
+          </div>
+
+          {/* TEAM FORMATION FORM */}
+          <form onSubmit={handleConfirmTeam} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              
+              {/* Partner 1 (Current Student) */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-200">
+                  Partner 1 (Du):
+                </label>
+                <div className="w-full bg-slate-950 border border-purple-500/40 rounded-xl p-3 text-sm text-amber-300 font-bold flex items-center justify-between">
+                  <span>{partner1}</span>
+                  <span className="text-[10px] text-slate-400 font-normal bg-slate-900 px-2 py-0.5 rounded-full">Angemeldet</span>
+                </div>
               </div>
 
-              {/* Waiting Activity Advice */}
-              <div className="p-4 rounded-xl bg-slate-950/70 border border-amber-500/20 text-left text-xs space-y-2">
-                <span className="font-bold text-amber-300 block">📚 Was du in der Zwischenzeit tun kannst:</span>
-                <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
-                  <li>Gehe leise nach hinten und lies in den <strong>Sachbüchern zum Alten Ägypten</strong>.</li>
-                  <li>Oder öffne <strong>OneNote</strong> und vertiefe deine Notizen zu den Pharaonen!</li>
-                </ul>
-              </div>
-
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => sounds.playPop()}
-                  className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold rounded-xl text-xs border border-amber-500/30 flex items-center justify-center gap-2 mx-auto transition-all"
+              {/* Partner 2 Selection */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-200">
+                  Partner 2 (Von Lehrkraft zugeteilt):
+                </label>
+                <select
+                  value={partner2}
+                  onChange={(e) => setPartner2(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-400"
+                  required
                 >
-                  <RotateCcw className="w-4 h-4" />
-                  <span>Nach fertigen Mitschüler:innen suchen</span>
-                </button>
+                  <option value="">-- Mitschüler:in wählen --</option>
+                  {CLASS_STUDENTS.filter(name => name !== partner1).map(name => (
+                    <option key={name} value={name}>
+                      {name} (Klasse 5b)
+                    </option>
+                  ))}
+                </select>
               </div>
+
             </div>
-          ) : (
-            /* TEAM FORMATION FORM */
-            <form onSubmit={handleConfirmTeam} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                
-                {/* Partner 1 (Current Student) */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-200">
-                    Partner 1 (Du):
-                  </label>
-                  <div className="w-full bg-slate-950 border border-purple-500/40 rounded-xl p-3 text-sm text-amber-300 font-bold flex items-center justify-between">
-                    <span>{partner1}</span>
-                    <span className="text-[10px] text-slate-400 font-normal bg-slate-900 px-2 py-0.5 rounded-full">Angemeldet</span>
-                  </div>
-                </div>
 
-                {/* Partner 2 Selection (Only eligible students) */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-200">
-                    Partner 2 (Wähle ein freies Kind):
-                  </label>
-                  <select
-                    value={partner2}
-                    onChange={(e) => setPartner2(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-400"
-                    required
-                  >
-                    {student.groupPartner2 && (
-                      <option value={student.groupPartner2}>{student.groupPartner2} (Bestehendes Team)</option>
-                    )}
-                    {eligiblePartners.map(s => (
-                      <option key={s.name} value={s.name}>
-                        {s.name} (Station 1–3 beendet ✓)
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-              </div>
-
-              <div className="pt-2 text-center">
-                <button
-                  type="submit"
-                  disabled={!partner2 || partner1 === partner2}
-                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-white font-bold rounded-xl shadow-lg shadow-purple-500/20 text-xs sm:text-sm inline-flex items-center gap-2 disabled:opacity-50 transition-all hover:scale-105 active:scale-95"
-                >
-                  <UserCheck className="w-4 h-4" />
-                  <span>2er-Team bestätigen & Theater-Thema wählen</span>
-                </button>
-              </div>
-            </form>
-          )}
+            <div className="pt-2 text-center">
+              <button
+                type="submit"
+                disabled={!partner2 || partner1 === partner2}
+                className="px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-white font-bold rounded-xl shadow-lg shadow-purple-500/20 text-xs sm:text-sm inline-flex items-center gap-2 disabled:opacity-50 transition-all hover:scale-105 active:scale-95"
+              >
+                <UserCheck className="w-4 h-4" />
+                <span>2er-Team mit {partner2 || 'Partner'} bestätigen & Theater-Thema wählen</span>
+              </button>
+            </div>
+          </form>
         </div>
       ) : (
         /* STEP 2: THEATER TASK SELECTION & WORKSPACE */
@@ -484,6 +566,186 @@ export const GroupStation: React.FC = () => {
                 />
               </div>
 
+              {/* THEATER POSE PHOTO UPLOAD & TABLET CAMERA */}
+              <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-amber-950/60 via-slate-900 to-indigo-950/60 border-2 border-amber-500/40 shadow-xl space-y-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
+                      <Camera className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-display font-bold text-base text-amber-200">
+                        Gruppen-Foto in Theater-Pose
+                      </h4>
+                      <p className="text-xs text-slate-300">
+                        Knipst mit der Tablet-Kamera ein Foto von euch beiden in Aktion für die Klassen-Fotowand!
+                      </p>
+                    </div>
+                  </div>
+
+                  {onOpenPhotoWall && (
+                    <button
+                      type="button"
+                      onClick={onOpenPhotoWall}
+                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm shrink-0"
+                    >
+                      <ImageIcon className="w-3.5 h-3.5" />
+                      <span>Klassen-Fotowand öffnen</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Hidden file input with tablet camera capture */}
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  capture="environment" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                  className="hidden" 
+                />
+
+                {student.groupNotes?.theaterPhoto ? (
+                  <div className="bg-slate-950/80 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4">
+                    <div className="w-36 h-28 sm:w-44 sm:h-32 rounded-xl overflow-hidden bg-black shrink-0 border-2 border-amber-500/50 shadow-md relative group">
+                      <img 
+                        src={student.groupNotes.theaterPhoto} 
+                        alt="Eure Theaterpose" 
+                        className="w-full h-full object-cover" 
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[11px] font-bold">
+                        Foto gespeichert ✓
+                      </div>
+                    </div>
+
+                    <div className="flex-1 space-y-2 text-center sm:text-left">
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Foto erfolgreich hochgeladen!</span>
+                      </div>
+                      <p className="text-xs text-slate-300">
+                        Pose von <strong>{partner1}</strong> & <strong>{partner2}</strong> • Gespeichert um {student.groupNotes.theaterPhotoTimestamp || 'Heute'}
+                      </p>
+
+                      <div className="pt-1 flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xs font-semibold rounded-xl flex items-center gap-1.5"
+                        >
+                          <Camera className="w-3.5 h-3.5" />
+                          <span>Neues Foto aufnehmen</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleDeletePhoto}
+                          className="px-3 py-1.5 bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border border-rose-500/30 text-xs font-semibold rounded-xl flex items-center gap-1.5"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Foto löschen</span>
+                        </button>
+                        {onOpenPhotoWall && (
+                          <button
+                            type="button"
+                            onClick={onOpenPhotoWall}
+                            className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow"
+                          >
+                            <span>Fotowand ansehen</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-slate-950/60 border-2 border-dashed border-amber-500/30 rounded-2xl p-6 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-400 mx-auto flex items-center justify-center">
+                      <Camera className="w-6 h-6 animate-pulse" />
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-sm text-amber-200">
+                        Knipst euer Gruppen-Foto in Theater-Pose!
+                      </h5>
+                      <p className="text-xs text-slate-400 max-w-md mx-auto mt-0.5">
+                        Schnappt euch das Tablet, stellt euch in eure Theater-Rollen (z.B. als Sklave am Stein oder Pharao) und nehmt euer Foto auf.
+                      </p>
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-center gap-3 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-amber-500/20 hover:scale-105 active:scale-95 transition-all"
+                      >
+                        <Camera className="w-4 h-4" />
+                        <span>Tablet-Kamera öffnen / Foto knipsen</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleStartLiveCamera}
+                        className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold rounded-xl text-xs flex items-center gap-2"
+                      >
+                        <Video className="w-4 h-4 text-amber-400" />
+                        <span>Live-Kamera starten</span>
+                      </button>
+                    </div>
+
+                    {photoError && (
+                      <p className="text-xs text-rose-400 font-semibold">{photoError}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Live Camera View Modal if active */}
+                {isCapturingLive && (
+                  <div className="fixed inset-0 z-60 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+                    <div className="bg-slate-900 border-2 border-amber-500 rounded-3xl max-w-lg w-full p-5 space-y-4 shadow-2xl relative">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-display font-bold text-base text-amber-300 flex items-center gap-2">
+                          <Camera className="w-4 h-4" />
+                          <span>Tablet-Kamera: Bitte Lächeln!</span>
+                        </h4>
+                        <button
+                          type="button"
+                          onClick={handleStopLiveCamera}
+                          className="w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden bg-black border border-slate-700 relative flex items-center justify-center">
+                        <video 
+                          ref={videoRef} 
+                          autoPlay 
+                          playsInline 
+                          muted 
+                          className="w-full h-full object-cover -scale-x-100" 
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={handleStopLiveCamera}
+                          className="px-4 py-2 bg-slate-800 text-slate-300 text-xs font-semibold rounded-xl"
+                        >
+                          Abbrechen
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleTakeLiveSnapshot}
+                          className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-extrabold text-xs rounded-xl flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95"
+                        >
+                          <Camera className="w-4 h-4" />
+                          <span>📸 Foto knipsen!</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* FINISH THEATER & SEARCH FOR PARTNER 2ER-GROUP */}
               {!student.groupCompleted && (
                 <div className="pt-2 text-center">
@@ -504,43 +766,83 @@ export const GroupStation: React.FC = () => {
           {student.groupCompleted && (
             <div className="space-y-6">
               
-              {isWaitingForOtherTeam ? (
-                /* WAITING BOX: NO OTHER 2ER-GROUP READY YET */
-                <div className="bg-gradient-to-br from-indigo-950/80 via-slate-900 to-purple-950/80 border-2 border-amber-500/40 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-2xl">
-                  <div className="w-14 h-14 mx-auto rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center">
-                    <Clock className="w-7 h-7 animate-pulse" />
+              {!hasAssignedGroup ? (
+                /* INSTRUCTION: GO TO TEACHER TO BE PAIRED INTO 4ER-GROUP */
+                <div className="bg-gradient-to-br from-indigo-950/90 via-slate-900 to-purple-950/90 border-2 border-amber-500/50 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
+                  
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-2xl border border-amber-500/30 shrink-0">
+                      🏛️
+                    </div>
+                    <div>
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30 mb-1">
+                        <span>Wichtige Anweisung für Klasse 5b</span>
+                      </div>
+                      <h4 className="font-display font-bold text-lg sm:text-xl text-amber-200">
+                        Geht jetzt zur Lehrperson!
+                      </h4>
+                    </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <h4 className="font-display font-bold text-lg text-amber-200">
-                      Super gemacht! Euer 2er-Team ist bereit! ⏳
-                    </h4>
-                    <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
-                      Aktuell hat noch keine andere 2er-Gruppe Aufgabe 4 abgeschlossen. 
-                      Bitte geduldet euch noch einen kurzen Moment, während die anderen Gruppen ihr Theaterstück proben.
+                  <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-amber-500/30 text-xs sm:text-sm text-slate-200 leading-relaxed space-y-2">
+                    <p>
+                      Super, euer 2er-Team (<strong>{partner1} & {partner2}</strong>) hat das Theaterstück fertig geprobt!
+                    </p>
+                    <p>
+                      Geht jetzt <strong>gemeinsam zu Herr Pfeifer oder Frau Escher</strong> nach vorne. Die Lehrperson teilt euer 2er-Team mit einer anderen 2er-Gruppe zu einem <strong>gemeinsamen 4er-Team</strong> zusammen.
                     </p>
                   </div>
 
-                  {/* Activity suggestion */}
-                  <div className="p-4 rounded-xl bg-slate-950/70 border border-amber-500/20 text-left text-xs space-y-2 max-w-md mx-auto">
-                    <span className="font-bold text-amber-300 block">📚 Was ihr jetzt tun könnt:</span>
-                    <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
-                      <li>Probt euer Theaterstück noch 1–2 Mal leise durch.</li>
-                      <li>Lest leise in den Sachbüchern oder forscht auf OneNote weiter.</li>
-                    </ul>
+                  {/* 4er-Group Assignment Selector */}
+                  <div className="p-5 rounded-2xl bg-purple-950/40 border border-purple-500/40 space-y-4 text-xs">
+                    <span className="font-bold text-purple-200 block text-sm">
+                      Welche Partnergruppe hat euch die Lehrperson zugeteilt?
+                    </span>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-slate-300 font-bold block">1. Kind der Partnergruppe:</label>
+                        <select
+                          value={assignPartnerA}
+                          onChange={(e) => setAssignPartnerA(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-400"
+                        >
+                          {CLASS_STUDENTS.filter(n => n !== partner1 && n !== partner2).map(n => (
+                            <option key={n} value={n}>{n}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-slate-300 font-bold block">2. Kind der Partnergruppe:</label>
+                        <select
+                          value={assignPartnerB}
+                          onChange={(e) => setAssignPartnerB(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-400"
+                        >
+                          {CLASS_STUDENTS.filter(n => n !== partner1 && n !== partner2 && n !== assignPartnerA).map(n => (
+                            <option key={n} value={n}>{n}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 text-center">
+                      <button
+                        onClick={() => {
+                          sounds.playFanfare();
+                          assignPresentationGroup(assignPartnerA, assignPartnerB);
+                        }}
+                        className="px-6 py-3 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-slate-950 font-bold rounded-xl text-xs sm:text-sm shadow-lg shadow-amber-500/25 inline-flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all"
+                      >
+                        <Users className="w-4 h-4" />
+                        <span>4er-Gruppe mit {assignPartnerA} & {assignPartnerB} bestätigen & Vorführung starten!</span>
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="pt-2">
-                    <button
-                      onClick={handleCheckForOtherGroup}
-                      className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-bold rounded-xl text-xs shadow-md flex items-center justify-center gap-2 mx-auto hover:scale-105 active:scale-95 transition-all"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                      <span>Erneut prüfen, ob eine Gruppe bereit ist 🔄</span>
-                    </button>
-                  </div>
                 </div>
-              ) : hasAssignedGroup ? (
+              ) : (
                 /* 4ER-GROUP PRESENTATION & MUTUAL FEEDBACK PHASE */
                 <div className="bg-gradient-to-br from-indigo-950/80 via-slate-900 to-purple-950/80 border-2 border-amber-500/50 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
                   
@@ -631,40 +933,88 @@ export const GroupStation: React.FC = () => {
                           </div>
                         </div>
 
+                        {/* Educational Example Inspiration Box (Not prefilled!) */}
+                        <div className="p-3.5 bg-purple-950/40 border border-purple-500/30 rounded-2xl space-y-1.5 text-xs">
+                          <div className="flex items-center gap-1.5 font-bold text-amber-300">
+                            <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
+                            <span>Beispiel zur Orientierung (schreibt euer eigenes Feedback):</span>
+                          </div>
+                          <p className="text-[11px] text-slate-300 italic pl-5">
+                            • Lob-Beispiel: „Ihr habt den Stein-Transport super lebendig gespielt und die Rollen sehr überzeugend dargestellt!“
+                          </p>
+                          <p className="text-[11px] text-slate-300 italic pl-5">
+                            • Tipp-Beispiel: „Sprecht bei der nächsten Aufführung noch etwas lauter und deutlicher zum Publikum.“
+                          </p>
+                        </div>
+
                         {/* Praise */}
                         <div>
                           <label className="block text-xs font-bold text-slate-300 mb-1">
-                            Was hat euch besonders gut gefallen? (Lob):
+                            Was hat euch besonders gut gefallen? (Eigenes Lob):
                           </label>
                           <input
                             type="text"
                             value={feedbackPraise}
-                            onChange={(e) => setFeedbackPraise(e.target.value)}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-400"
+                            onChange={(e) => {
+                              setFeedbackPraise(e.target.value);
+                              setFeedbackError(null);
+                            }}
+                            placeholder="Schreibt hier euer eigenes Lob in eigenen Worten..."
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400"
                             required
                           />
+                          {feedbackPraise.trim().length > 0 && feedbackPraise.trim().length < 6 && (
+                            <p className="text-[11px] text-amber-400 mt-1">Noch etwas zu kurz – formuliert einen vollständigen Satz.</p>
+                          )}
                         </div>
 
                         {/* Tip */}
                         <div>
                           <label className="block text-xs font-bold text-slate-300 mb-1">
-                            Ein kleiner Tipp für das nächste Mal:
+                            Ein kleiner Tipp für das nächste Mal (Eigener Tipp):
                           </label>
                           <input
                             type="text"
                             value={feedbackTip}
-                            onChange={(e) => setFeedbackTip(e.target.value)}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-400"
+                            onChange={(e) => {
+                              setFeedbackTip(e.target.value);
+                              setFeedbackError(null);
+                            }}
+                            placeholder="Schreibt hier euren eigenen Tipp für die Gruppe..."
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400"
                             required
                           />
+                          {feedbackTip.trim().length > 0 && feedbackTip.trim().length < 6 && (
+                            <p className="text-[11px] text-amber-400 mt-1">Noch etwas zu kurz – formuliert einen konkreten Tipp.</p>
+                          )}
                         </div>
 
-                        <button
-                          type="submit"
-                          className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold rounded-xl text-xs hover:scale-105 active:scale-95 transition-all shadow-md"
-                        >
-                          Feedback speichern & bestätigen ✓
-                        </button>
+                        {feedbackError && (
+                          <div className="p-3 bg-rose-950/60 border border-rose-500/40 rounded-xl text-xs text-rose-300 font-semibold">
+                            {feedbackError}
+                          </div>
+                        )}
+
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
+                          <button
+                            type="submit"
+                            disabled={feedbackPraise.trim().length < 6 || feedbackTip.trim().length < 6}
+                            className={`px-5 py-2.5 font-bold rounded-xl text-xs flex items-center gap-2 transition-all shadow-md ${
+                              feedbackPraise.trim().length >= 6 && feedbackTip.trim().length >= 6
+                                ? 'bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-white hover:scale-105 active:scale-95 cursor-pointer'
+                                : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                            }`}
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Eigenes Feedback speichern & bestätigen ✓</span>
+                          </button>
+
+                          {(feedbackPraise.trim().length < 6 || feedbackTip.trim().length < 6) && (
+                            <span className="text-[11px] text-slate-400">
+                              * Aufgabe ist erst erfüllt, wenn beide Felder mit eigenem Feedback ausgefüllt sind.
+                            </span>
+                          )}
+                        </div>
                       </form>
                     ) : (
                       <div className="p-4 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-xs space-y-1 text-emerald-300">
@@ -743,7 +1093,7 @@ export const GroupStation: React.FC = () => {
                   </div>
 
                 </div>
-              ) : null}
+              )}
 
             </div>
           )}
@@ -757,19 +1107,35 @@ export const GroupStation: React.FC = () => {
             <p className="text-xs text-slate-300 leading-relaxed">
               Sobald eure 2er- bzw. 4er-Gruppe mit der Theater-Präsentation und der Urkunde fertig ist:
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-xs">
               <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex items-start gap-2.5">
                 <BookOpen className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                 <div>
-                  <strong className="text-white block">1. In den Sachbüchern lesen:</strong>
-                  <span className="text-slate-400 text-[11px]">Geht leise nach hinten und schmökert in den Ägypten-Büchern im Klassenzimmer.</span>
+                  <strong className="text-white block">1. Sachbücher lesen:</strong>
+                  <span className="text-slate-400 text-[11px]">Geht leise nach hinten und schmökert in den Ägypten-Büchern.</span>
                 </div>
               </div>
               <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex items-start gap-2.5">
                 <Laptop className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
                 <div>
-                  <strong className="text-white block">2. Auf OneNote weiterarbeiten:</strong>
-                  <span className="text-slate-400 text-[11px]">Öffnet euer OneNote-Notizbuch und bearbeitet eure weiteren Aufgaben oder Vertiefungen.</span>
+                  <strong className="text-white block">2. OneNote weiterarbeiten:</strong>
+                  <span className="text-slate-400 text-[11px]">Bearbeitet eure Notizen und Aufgaben im OneNote-Klassenheft.</span>
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-500/40 flex items-start gap-2.5">
+                <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-amber-300 block">3. Hieroglyphen-Spiel:</strong>
+                  <span className="text-slate-300 text-[11px] block">
+                    Schreibe deinen Namen in Hieroglyphen in dein Zeichnungsheft!
+                  </span>
+                  <button
+                    onClick={() => setCurrentStation('belohnungen')}
+                    className="mt-1.5 px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-[10px] inline-flex items-center gap-1 shadow"
+                  >
+                    <span>Hieroglyphen öffnen</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </button>
                 </div>
               </div>
             </div>

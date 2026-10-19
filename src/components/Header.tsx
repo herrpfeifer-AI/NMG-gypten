@@ -14,7 +14,8 @@ import {
   Edit2,
   Lock,
   Compass,
-  RotateCcw
+  RotateCcw,
+  Camera
 } from 'lucide-react';
 import { useProgress } from '../context/ProgressContext';
 import { StationId } from '../types';
@@ -24,13 +25,17 @@ interface HeaderProps {
   onOpenOverview?: () => void;
   onOpenNameSelect?: () => void;
   onResetApp?: () => void;
+  onOpenScoreboard?: () => void;
+  onOpenPhotoWall?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
   onOpenSolutions, 
   onOpenOverview,
   onOpenNameSelect,
-  onResetApp
+  onResetApp,
+  onOpenScoreboard,
+  onOpenPhotoWall
 }) => {
   const { 
     student, 
@@ -105,9 +110,6 @@ export const Header: React.FC<HeaderProps> = ({
                     <h1 className="font-display font-extrabold text-base sm:text-lg tracking-wider text-amber-300 uppercase drop-shadow">
                       Expedition Altes Ägypten
                     </h1>
-                    <span className="hidden sm:inline-block px-2 py-0.5 text-[11px] font-semibold bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30">
-                      Woozle Goozle
-                    </span>
                   </div>
                   <p className="text-xs text-slate-300 flex items-center gap-1.5">
                     <span>Forscher:in:</span>
@@ -156,20 +158,21 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             {/* Quick Actions & Teacher Switcher (Desktop) */}
-            <div className="flex items-center justify-end gap-2 sm:gap-3">
-              {/* Reset App Button */}
-              {onResetApp && (
+            <div className="flex items-center justify-end gap-2 sm:gap-2.5 flex-wrap">
+              {/* Reset App Button (ONLY VISIBLE IN TEACHER MODE!) */}
+              {isTeacherMode && onResetApp && (
                 <button
                   onClick={() => {
-                    if (window.confirm('Möchtest du die App wirklich zurücksetzen und die Lerneinheit von ganz vorne starten?')) {
+                    if (window.confirm('Möchtest du wirklich alle Fortschritte aller Schüler:innen der Klasse 5b zurücksetzen und die App von ganz vorne starten?')) {
                       onResetApp();
                     }
                   }}
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-rose-950/40 text-slate-400 hover:text-rose-300 border border-slate-700 hover:border-rose-500/40 flex items-center gap-1.5 shadow-sm transition-all"
-                  title="App zurücksetzen und von vorne starten"
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-950/80 hover:bg-rose-900 text-rose-200 border border-rose-500/50 flex items-center gap-1.5 shadow-sm transition-all animate-pulse"
+                  title="Alle Fortschritte aller Schüler:innen der Klasse 5b zurücksetzen (Nur Lehrkraft)"
                 >
                   <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
-                  <span className="hidden sm:inline">Neustart</span>
+                  <span className="hidden sm:inline">Neustart (Alle zurücksetzen)</span>
+                  <span className="sm:hidden">Neustart</span>
                 </button>
               )}
 
@@ -186,6 +189,32 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               )}
 
+              {/* Class Scoreboard / Punkte-Übersicht Button for all kids */}
+              {onOpenScoreboard && (
+                <button
+                  onClick={onOpenScoreboard}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 flex items-center gap-1.5 shadow-sm transition-all"
+                  title="Punkte-Übersicht der ganzen Klasse 5b ansehen"
+                >
+                  <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden sm:inline">Klassen-Punkte</span>
+                  <span className="sm:hidden">Punkte</span>
+                </button>
+              )}
+
+              {/* Photo Pinnwand Button */}
+              {onOpenPhotoWall && (
+                <button
+                  onClick={onOpenPhotoWall}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5 shadow-sm transition-all"
+                  title="Theater-Fotowand der Klasse ansehen"
+                >
+                  <Camera className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="hidden sm:inline">Fotowand</span>
+                  <span className="sm:hidden">Fotos</span>
+                </button>
+              )}
+
               {/* Solution Handbook Button */}
               {(teacherSettings.allowStudentSolutionView || isTeacherMode || student.quizCompleted) && (
                 <button
@@ -198,6 +227,16 @@ export const Header: React.FC<HeaderProps> = ({
                   <span className="sm:hidden">Lösungen</span>
                 </button>
               )}
+
+              {/* Hieroglyph Quick Access Button */}
+              <button
+                onClick={() => setCurrentStation('belohnungen')}
+                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-purple-950/70 hover:bg-purple-900/80 text-purple-200 border border-purple-500/40 flex items-center gap-1.5 shadow-sm transition-all"
+                title="Hieroglyphen-Werkstatt & Zeichnungsheft-Auftrag öffnen"
+              >
+                <span className="text-amber-300 font-display">𓁹</span>
+                <span className="hidden sm:inline">Hieroglyphen</span>
+              </button>
 
               {/* Teacher Mode Button */}
               <button

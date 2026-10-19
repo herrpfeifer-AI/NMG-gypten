@@ -34,6 +34,7 @@ interface ProgressContextType {
   markGroupCompleted: () => void;
   assignPresentationGroup: (partner1?: string, partner2?: string) => { partner1: string; partner2: string } | null;
   saveTheaterFeedback: (feedback: { keywordsMentioned: string[]; rating: number; praise: string; tip: string }) => void;
+  saveTheaterPhoto: (photoDataUrl: string) => void;
   unlockGroupWithCheopsCode: (code: string) => boolean;
   recordSolutionBookletUsed: () => void;
   submitResultsToTeacher: () => void;
@@ -452,50 +453,52 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     triggerCelebration();
   };
 
-  const assignPresentationGroup = (partner1?: string, partner2?: string): { partner1: string; partner2: string } | null => {
-    const p1 = partner1 || activeStudent.groupPartner1;
-    const p2 = partner2 || activeStudent.groupPartner2;
+  const assignPresentationGroup = (arg1?: string, arg2?: string): { partner1: string; partner2: string } | null => {
+    const p1 = activeStudent.groupPartner1 || 'Carla';
+    const p2 = activeStudent.groupPartner2 || 'Partner';
 
-    if (!p1 || !p2) return null;
+    let otherP1 = '';
+    let otherP2 = '';
 
-    if (activeStudent.assignedPresentationGroup?.partner1) {
-      return activeStudent.assignedPresentationGroup;
+    // If explicit other group names are passed:
+    if (arg1 && arg2 && (arg1 !== p1 || arg2 !== p2)) {
+      otherP1 = arg1;
+      otherP2 = arg2;
+    } else {
+      // Look for another 2er-team in studentsList
+      const otherReadyStudent = studentsList.find(s => 
+        s.name !== p1 && 
+        s.name !== p2 && 
+        s.groupPartner1 && 
+        s.groupPartner2
+      );
+      if (otherReadyStudent && otherReadyStudent.groupPartner1 && otherReadyStudent.groupPartner2) {
+        otherP1 = otherReadyStudent.groupPartner1;
+        otherP2 = otherReadyStudent.groupPartner2;
+      } else {
+        // Fallback pair from class
+        const availableClassmates = ['Sofia', 'Omar', 'Annabelle', 'Adam', 'Ilian', 'Shukrie', 'Monika', 'Matej'].filter(n => n !== p1 && n !== p2);
+        otherP1 = availableClassmates[0] || 'Sofia';
+        otherP2 = availableClassmates[1] || 'Omar';
+      }
     }
-
-    // Look for another 2er-team in studentsList that has completed task 4 (groupCompleted === true)
-    // and is not the current team
-    const otherReadyStudent = studentsList.find(s => 
-      s.name !== p1 && 
-      s.name !== p2 && 
-      s.groupPartner1 && 
-      s.groupPartner2 && 
-      s.groupCompleted
-    );
-
-    if (!otherReadyStudent || !otherReadyStudent.groupPartner1 || !otherReadyStudent.groupPartner2) {
-      // No other 2er-team has finished Task 4 yet!
-      return null;
-    }
-
-    const otherP1 = otherReadyStudent.groupPartner1;
-    const otherP2 = otherReadyStudent.groupPartner2;
 
     const assigned = { partner1: otherP1, partner2: otherP2 };
     const reciprocalAssigned = { partner1: p1, partner2: p2 };
 
     setStudentsList(prev => prev.map(s => {
-      if (s.name === p1 || s.name === p2) {
+      if (s.name === p1 || s.name === p2 || s.id === activeStudent.id) {
         return {
           ...s,
           assignedPresentationGroup: assigned,
-          lastUpdated: `Präsentations-Gruppe: ${otherP1} & ${otherP2}`
+          lastUpdated: `4er-Gruppe: ${otherP1} & ${otherP2}`
         };
       }
       if (s.name === otherP1 || s.name === otherP2) {
         return {
           ...s,
           assignedPresentationGroup: reciprocalAssigned,
-          lastUpdated: `Präsentations-Gruppe: ${p1} & ${p2}`
+          lastUpdated: `4er-Gruppe: ${p1} & ${p2}`
         };
       }
       return s;
@@ -537,6 +540,28 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               ...feedback
             }
           }
+        };
+      }
+      return s;
+    }));
+  };
+
+  const saveTheaterPhoto = (photoDataUrl: string) => {
+    sounds.playShutter();
+    const p1 = activeStudent.groupPartner1;
+    const p2 = activeStudent.groupPartner2;
+    const now = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+    setStudentsList(prev => prev.map(s => {
+      if (s.id === activeStudent.id || (p1 && s.name === p1) || (p2 && s.name === p2)) {
+        return {
+          ...s,
+          groupNotes: {
+            ...s.groupNotes,
+            theaterPhoto: photoDataUrl,
+            theaterPhotoTimestamp: now
+          },
+          lastUpdated: 'Theater-Foto hochgeladen'
         };
       }
       return s;
@@ -797,6 +822,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         markGroupCompleted,
         assignPresentationGroup,
         saveTheaterFeedback,
+        saveTheaterPhoto,
         unlockGroupWithCheopsCode,
         recordSolutionBookletUsed,
         submitResultsToTeacher,
