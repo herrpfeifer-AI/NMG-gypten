@@ -18,7 +18,8 @@ import {
   Trophy,
   ArrowRight,
   ExternalLink,
-  Key
+  Key,
+  FastForward
 } from 'lucide-react';
 import { useProgress } from '../context/ProgressContext';
 import { TEXT_QUESTIONS, QUIZ_QUESTIONS } from '../data/learningData';
@@ -39,18 +40,23 @@ export const TeacherDashboard: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'progress' | 'groups' | 'solutions' | 'settings'>('progress');
   const [searchTerm, setSearchTerm] = useState('');
+  const [classFilter, setClassFilter] = useState<'all' | '5a' | '5b'>('all');
   const [inspectingStudent, setInspectingStudent] = useState<StudentProgress | null>(null);
 
   // New student modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newStudentName, setNewStudentName] = useState('');
-  const [newStudentClass, setNewStudentClass] = useState(teacherSettings.classGroup || 'Klasse 5b (Herr Pfeifer & Frau Escher)');
+  const [newStudentClass, setNewStudentClass] = useState(teacherSettings.classGroup || 'Klasse 5a');
 
   // Filter students
-  const filteredStudents = studentsList.filter(s => 
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.schoolClass.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredStudents = studentsList.filter(s => {
+    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.schoolClass.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!matchesSearch) return false;
+    if (classFilter === '5a') return s.schoolClass.includes('5a');
+    if (classFilter === '5b') return s.schoolClass.includes('5b');
+    return true;
+  });
 
   // Compute classroom stats
   const totalStudents = studentsList.length;
@@ -127,7 +133,7 @@ export const TeacherDashboard: React.FC = () => {
           </div>
           <div>
             <div className="text-xs font-bold uppercase tracking-wider text-slate-900/80">
-              Klasse 5b • Herr Pfeifer & Frau Escher
+              NMG 5. Klassen (Klasse 5a & 5b)
             </div>
             <h2 className="font-display font-extrabold text-xl sm:text-2xl text-slate-950">
               Klassen-Cockpit: Altes Ägypten
@@ -174,7 +180,7 @@ export const TeacherDashboard: React.FC = () => {
                 : 'bg-amber-700/40 text-slate-950 hover:bg-amber-700/60'
             }`}
           >
-            Optionen
+            Optionen & Codes
           </button>
           <button
             onClick={() => setIsTeacherMode(false)}
@@ -182,6 +188,53 @@ export const TeacherDashboard: React.FC = () => {
           >
             Schüler-Ansicht
           </button>
+        </div>
+      </div>
+
+      {/* Quick Teacher Cheat-Sheet Bar (immer sichtbar) */}
+      <div className="bg-slate-900/90 border border-amber-500/40 rounded-2xl p-4 shadow-xl">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 border-b border-slate-800 pb-2.5 mb-3">
+          <div className="flex items-center gap-2">
+            <Key className="w-4 h-4 text-amber-400" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-amber-200">
+              Lehrer-Codes & Überspring-Passwörter
+            </h3>
+          </div>
+          <span className="text-[11px] text-amber-300 bg-amber-950/60 border border-amber-500/30 px-3 py-1 rounded-xl">
+            💡 <strong>Pädagogische Regel:</strong> Überspring-Passwörter nur herausgeben, wenn Schüler:in mitteilt, dass die Station bereits gelöst wurde!
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
+          <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+            <span className="text-[10px] text-amber-400 font-bold uppercase block">Station 2 überspringen:</span>
+            <span className="font-mono font-black text-amber-300 text-base">Gize</span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">Textbausteine</span>
+          </div>
+
+          <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+            <span className="text-[10px] text-amber-400 font-bold uppercase block">Station 3 überspringen:</span>
+            <span className="font-mono font-black text-amber-300 text-base">Sphinx</span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">Wissens-Quiz</span>
+          </div>
+
+          <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+            <span className="text-[10px] text-cyan-400 font-bold uppercase block">Station 4 freischalten:</span>
+            <span className="font-mono font-black text-cyan-300 text-base">Ramses</span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">Mündlich bei 3+ Fehlern</span>
+          </div>
+
+          <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+            <span className="text-[10px] text-purple-400 font-bold uppercase block">Station 5 Urkunde:</span>
+            <span className="font-mono font-black text-purple-300 text-base">Cheops</span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">Nach Theater-Präsentation</span>
+          </div>
+
+          <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+            <span className="text-[10px] text-emerald-400 font-bold uppercase block">Lehrer-Pult PIN:</span>
+            <span className="font-mono font-black text-emerald-300 text-base">4051</span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">PLZ Erlenmatt</span>
+          </div>
         </div>
       </div>
 
@@ -225,6 +278,42 @@ export const TeacherDashboard: React.FC = () => {
                   placeholder="Schüler suchen..."
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
                 />
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setClassFilter('all')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    classFilter === 'all'
+                      ? 'bg-amber-500 text-slate-950 shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Alle ({studentsList.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setClassFilter('5a')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    classFilter === '5a'
+                      ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                      : 'text-slate-400 hover:text-cyan-300'
+                  }`}
+                >
+                  5a ({studentsList.filter(s => s.schoolClass.includes('5a')).length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setClassFilter('5b')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    classFilter === '5b'
+                      ? 'bg-amber-400 text-slate-950 shadow-sm'
+                      : 'text-slate-400 hover:text-amber-300'
+                  }`}
+                >
+                  5b ({studentsList.filter(s => s.schoolClass.includes('5b')).length})
+                </button>
               </div>
 
               <div className="flex items-center gap-2">
@@ -731,26 +820,75 @@ export const TeacherDashboard: React.FC = () => {
           </div>
 
           {/* Teacher Codes Cheat-Sheet */}
-          <div className="space-y-3 pt-4 border-t border-slate-800 bg-slate-950/60 p-4 rounded-2xl border border-amber-500/30">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-2">
-              <Key className="w-4 h-4 text-amber-400" />
-              <span>Übersicht der Lehrer-Codes im Unterricht</span>
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
-                <span className="text-[10px] text-slate-400 block font-bold uppercase">Lehrer-Pult PIN:</span>
-                <span className="font-mono font-bold text-amber-300 text-base">4051</span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">(Tipp: PLZ Erlenmatt)</span>
+          <div className="space-y-4 pt-4 border-t border-slate-800 bg-slate-950/60 p-5 rounded-2xl border border-amber-500/30">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-2">
+                <Key className="w-4 h-4 text-amber-400" />
+                <span>Übersicht aller Lehrer-Codes & Passwörter</span>
+              </h4>
+              <span className="text-[11px] text-amber-300 bg-amber-950/60 border border-amber-500/20 px-2.5 py-0.5 rounded-full">
+                Passwörter sind nicht case-sensitiv
+              </span>
+            </div>
+
+            <div className="bg-amber-950/30 border border-amber-500/20 rounded-xl p-3 text-xs text-amber-200/90 leading-relaxed">
+              <strong>Hinweis zum Überspringen:</strong> Wenn Schüler:innen Station 2 oder 3 bereits vorab im Unterricht, auf Papier oder in OneNote gelöst haben, können sie dies der Lehrperson mitteilen. Die Lehrperson gibt ihnen das jeweilige Passwort zum Überspringen ein oder gibt es ihnen an:
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+              <div className="bg-slate-900/90 p-3.5 rounded-xl border border-amber-500/30 shadow-sm">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] text-amber-400 font-bold uppercase">Station 2 überspringen</span>
+                  <span className="text-[10px] bg-amber-500/10 text-amber-300 px-1.5 py-0.5 rounded">Textbausteine</span>
+                </div>
+                <span className="font-mono font-black text-amber-300 text-lg">Gize</span>
+                <span className="text-[11px] text-slate-300 block mt-1">
+                  Füllt alle 3 Lückentexte korrekt aus, verleiht das Text-Abzeichen und springt sofort zu Station 3 (Quiz).
+                </span>
               </div>
-              <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
-                <span className="text-[10px] text-slate-400 block font-bold uppercase">Quiz-Freischaltung (Station 4):</span>
-                <span className="font-mono font-bold text-cyan-300 text-base">Ramses</span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">(Nach mündlicher Besprechung)</span>
+
+              <div className="bg-slate-900/90 p-3.5 rounded-xl border border-amber-500/30 shadow-sm">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] text-amber-400 font-bold uppercase">Station 3 überspringen</span>
+                  <span className="text-[10px] bg-amber-500/10 text-amber-300 px-1.5 py-0.5 rounded">Wissens-Quiz</span>
+                </div>
+                <span className="font-mono font-black text-amber-300 text-lg">Sphinx</span>
+                <span className="text-[11px] text-slate-300 block mt-1">
+                  Schliesst das Quiz mit voller Punktzahl (6/6) ab, verleiht das Quiz-Abzeichen und springt sofort zu Station 4 (Gruppenarbeit).
+                </span>
               </div>
-              <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
-                <span className="text-[10px] text-slate-400 block font-bold uppercase">Urkunden-Freischaltung (Station 5):</span>
-                <span className="font-mono font-bold text-purple-300 text-base">Cheops</span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">(Nach gegenseitiger Präsentation)</span>
+
+              <div className="bg-slate-900/90 p-3.5 rounded-xl border border-cyan-500/30 shadow-sm">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] text-cyan-400 font-bold uppercase">Station 4 freischalten</span>
+                  <span className="text-[10px] bg-cyan-500/10 text-cyan-300 px-1.5 py-0.5 rounded">Quiz-Fehler &ge; 3</span>
+                </div>
+                <span className="font-mono font-black text-cyan-300 text-lg">Ramses</span>
+                <span className="text-[11px] text-slate-300 block mt-1">
+                  Wird bei &ge;3 Fehlern im Quiz verlangt (nach persönlicher mündlicher Prüfung/Besprechung).
+                </span>
+              </div>
+
+              <div className="bg-slate-900/90 p-3.5 rounded-xl border border-purple-500/30 shadow-sm">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] text-purple-400 font-bold uppercase">Station 5 Urkunde</span>
+                  <span className="text-[10px] bg-purple-500/10 text-purple-300 px-1.5 py-0.5 rounded">Gruppenarbeit</span>
+                </div>
+                <span className="font-mono font-black text-purple-300 text-lg">Cheops</span>
+                <span className="text-[11px] text-slate-300 block mt-1">
+                  Schaltet die Urkunde frei, nachdem die 2er-Gruppe ihr Rollenspiel vor einer anderen Gruppe präsentiert hat.
+                </span>
+              </div>
+
+              <div className="bg-slate-900/90 p-3.5 rounded-xl border border-emerald-500/30 shadow-sm">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] text-emerald-400 font-bold uppercase">Lehrer-Pult PIN</span>
+                  <span className="text-[10px] bg-emerald-500/10 text-emerald-300 px-1.5 py-0.5 rounded">Admin</span>
+                </div>
+                <span className="font-mono font-black text-emerald-300 text-lg">4051</span>
+                <span className="text-[11px] text-slate-300 block mt-1">
+                  Öffnet dieses Lehrer-Pult (Erlenmatt-PLZ).
+                </span>
               </div>
             </div>
           </div>
@@ -776,14 +914,14 @@ export const TeacherDashboard: React.FC = () => {
 
             <div className="pt-3 border-t border-slate-800/80">
               <label className="text-xs font-bold text-rose-400 block">
-                Gesamte Klasse 5b & App zurücksetzen (Neustart von vorn):
+                Gesamte 5. Klassen & App zurücksetzen (Neustart von vorn):
               </label>
               <p className="text-[11px] text-slate-400 mt-0.5">
                 Setzt alle Schüler:innen auf 0, öffnet die Namensauswahl und startet die Lerneinheit von Station 1.
               </p>
               <button
                 onClick={() => {
-                  if (confirm('Möchtest du wirklich die gesamte App und alle Schüler:innen der Klasse 5b auf den Neuzustand zurücksetzen?')) {
+                  if (confirm('Möchtest du wirklich die gesamte App und alle Schüler:innen der 5. Klassen (5a & 5b) auf den Neuzustand zurücksetzen?')) {
                     resetEntireApp();
                     setIsTeacherMode(false);
                   }
@@ -791,7 +929,7 @@ export const TeacherDashboard: React.FC = () => {
                 className="mt-2 px-4 py-2 bg-rose-600/30 hover:bg-rose-600/50 text-rose-200 border border-rose-500/40 rounded-xl text-xs font-bold flex items-center gap-2"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>Gesamte App & Klasse 5b zurücksetzen</span>
+                <span>Gesamte App & Klassen (5a & 5b) zurücksetzen</span>
               </button>
             </div>
           </div>
@@ -977,7 +1115,7 @@ export const TeacherDashboard: React.FC = () => {
                   type="text"
                   value={newStudentClass}
                   onChange={(e) => setNewStudentClass(e.target.value)}
-                  placeholder="z.B. Klasse 5b"
+                  placeholder="z.B. Klasse 5a oder Klasse 5b"
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-400"
                 />
               </div>

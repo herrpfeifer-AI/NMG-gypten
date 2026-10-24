@@ -47,7 +47,7 @@ export const NextStepsModal: React.FC<NextStepsModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold uppercase tracking-wider">
-                  Expedition Abgeschlossen • Klasse 5b
+                  Expedition Abgeschlossen • NMG 5. Klassen
                 </span>
               </div>
               <h3 className="font-display font-extrabold text-lg sm:text-2xl text-amber-300">

@@ -1,6 +1,6 @@
 export type StationId = 'video' | 'textbausteine' | 'quiz' | 'gruppenarbeit' | 'belohnungen';
 
-export const CLASS_STUDENTS = [
+export const CLASS_5B_STUDENTS = [
   'Carla',
   'Matej',
   'Sofia',
@@ -22,6 +22,39 @@ export const CLASS_STUDENTS = [
   'Derin',
   'Amira'
 ] as const;
+
+export const CLASS_5A_STUDENTS = [
+  'Hanna',
+  'Alisha',
+  'Nia',
+  'Mia',
+  'Azra',
+  'Venus',
+  'Shia',
+  'Anna',
+  'Jelscha',
+  'Miray',
+  'Freya',
+  'Sana',
+  'Murad',
+  'Pratham',
+  'Emin',
+  'Ubejd',
+  'Cihan',
+  'Fred'
+] as const;
+
+export const CLASS_STUDENTS = [
+  ...CLASS_5B_STUDENTS,
+  ...CLASS_5A_STUDENTS
+] as const;
+
+export const getStudentDefaultClass = (name: string): string => {
+  if (CLASS_5A_STUDENTS.some(n => n.toLowerCase() === name.toLowerCase())) {
+    return 'Klasse 5a';
+  }
+  return 'Klasse 5b';
+};
 
 export type StudentName = typeof CLASS_STUDENTS[number];
 

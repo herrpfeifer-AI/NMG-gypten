@@ -129,7 +129,7 @@ const AppContent: React.FC = () => {
         }}
       />
 
-      {/* 2. New Student Name Selection Mask (Klasse 5b - Herr Pfeifer & Frau Escher) */}
+      {/* 2. New Student Name Selection Mask (NMG 5. Klassen) */}
       <StudentSelectModal
         isOpen={isNameSelectModalOpen}
         onClose={() => setIsNameSelectModalOpen(false)}

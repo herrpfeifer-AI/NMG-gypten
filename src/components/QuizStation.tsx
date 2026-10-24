@@ -14,7 +14,11 @@ import {
   Lightbulb,
   AlertTriangle,
   ArrowRight,
-  ShieldAlert
+  ShieldAlert,
+  FastForward,
+  Key,
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { useProgress } from '../context/ProgressContext';
 import { QUIZ_QUESTIONS } from '../data/learningData';
@@ -24,6 +28,7 @@ export const QuizStation: React.FC = () => {
     student, 
     setQuizOptionAttempt, 
     unlockQuizWithRamsesCode, 
+    skipQuizStationWithPassword,
     submitQuiz, 
     setCurrentStation,
     isTeacherMode 
@@ -34,6 +39,23 @@ export const QuizStation: React.FC = () => {
   const [ramsesInput, setRamsesInput] = useState<string>('');
   const [ramsesError, setRamsesError] = useState<boolean>(false);
   const [ramsesSuccess, setRamsesSuccess] = useState<boolean>(false);
+
+  // Password skip modal state
+  const [isSkipModalOpen, setIsSkipModalOpen] = useState(false);
+  const [skipPassword, setSkipPassword] = useState('');
+  const [skipError, setSkipError] = useState<string | null>(null);
+
+  const handleSkipSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = skipQuizStationWithPassword(skipPassword);
+    if (res.success) {
+      setIsSkipModalOpen(false);
+      setSkipPassword('');
+      setSkipError(null);
+    } else {
+      setSkipError(res.error || 'Falsches Passwort!');
+    }
+  };
 
   const currentQ = QUIZ_QUESTIONS[activeQuestionIdx];
   const finalAnswer = student.quizAnswers[currentQ.id];
@@ -95,7 +117,7 @@ export const QuizStation: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-amber-300">
               Frage {activeQuestionIdx + 1} von {QUIZ_QUESTIONS.length}
             </span>
@@ -114,6 +136,21 @@ export const QuizStation: React.FC = () => {
                 Ergebnis ansehen
               </button>
             )}
+
+            {/* Skip button with teacher password */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsSkipModalOpen(true);
+                setSkipPassword('');
+                setSkipError(null);
+              }}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 border border-amber-500/40 transition-all hover:scale-102 shadow-sm"
+              title="Quiz mit Passwort der Lehrperson überspringen (z.B. wenn bereits gelöst)"
+            >
+              <FastForward className="w-3.5 h-3.5 text-amber-400" />
+              <span>Quiz überspringen</span>
+            </button>
           </div>
         </div>
       </div>
@@ -362,7 +399,7 @@ export const QuizStation: React.FC = () => {
               </div>
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300">
-                  Wichtige Anweisung für Klasse 5b
+                  Wichtige Anweisung für die 5. Klassen
                 </span>
                 <h4 className="font-display font-bold text-base text-amber-200">
                   Gehe jetzt zur Lehrperson!
@@ -370,7 +407,7 @@ export const QuizStation: React.FC = () => {
               </div>
             </div>
             <p className="text-xs sm:text-sm text-slate-100 leading-relaxed font-medium">
-              Glückwunsch, du hast das Wissens-Quiz beendet! Gehe jetzt nach vorne zu <strong>Herr Pfeifer oder Frau Escher</strong>. Die Lehrperson teilt dich direkt mit einer Mitschülerin oder einem Mitschüler in eine <strong>2er-Gruppe</strong> ein!
+              Glückwunsch, du hast das Wissens-Quiz beendet! Gehe jetzt nach vorne zur <strong>Lehrperson</strong>. Die Lehrperson teilt dich direkt mit einer Mitschülerin oder einem Mitschüler in eine <strong>2er-Gruppe</strong> ein!
             </p>
           </div>
 
@@ -494,6 +531,82 @@ export const QuizStation: React.FC = () => {
                 <ChevronRight className="w-4 h-4" />
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Password Skip Modal */}
+      {isSkipModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-amber-500/40 rounded-3xl p-6 max-w-md w-full shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+            <button
+              onClick={() => setIsSkipModalOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300">
+                <Key className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-display font-bold text-amber-200">
+                  Quiz überspringen
+                </h3>
+                <p className="text-xs text-slate-400">Station 3: Wissens-Quiz</p>
+              </div>
+            </div>
+
+            {/* Teacher note requirement */}
+            <div className="bg-amber-950/40 border border-amber-500/30 rounded-2xl p-3.5 text-xs text-amber-200/90 mb-4 leading-relaxed flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <strong>Wichtiger Hinweis:</strong> Das Überspringen geht nur, wenn du der Lehrperson mitteilst, dass du das Quiz bereits gelöst hast (z.B. auf Papier oder in OneNote). Die Lehrperson gibt dir dann das Lösungswort.
+              </div>
+            </div>
+
+            <form onSubmit={handleSkipSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  Passwort der Lehrperson eingeben:
+                </label>
+                <input
+                  type="text"
+                  value={skipPassword}
+                  onChange={(e) => {
+                    setSkipPassword(e.target.value);
+                    setSkipError(null);
+                  }}
+                  placeholder="Passwort eingeben..."
+                  autoFocus
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400 font-mono tracking-wider"
+                />
+                {skipError && (
+                  <p className="text-xs text-rose-400 font-semibold mt-1.5 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>{skipError}</span>
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsSkipModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  disabled={!skipPassword.trim()}
+                  className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-bold rounded-xl text-xs shadow-md hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Freischalten & zu Station 4 springen ✓
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

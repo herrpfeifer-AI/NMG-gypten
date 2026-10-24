@@ -10,7 +10,7 @@ import {
   GraduationCap,
   X
 } from 'lucide-react';
-import { CLASS_STUDENTS } from '../types';
+import { CLASS_STUDENTS, CLASS_5A_STUDENTS, CLASS_5B_STUDENTS, getStudentDefaultClass } from '../types';
 import { sounds } from '../utils/soundEffects';
 
 interface StudentSelectModalProps {
@@ -33,14 +33,19 @@ export const StudentSelectModal: React.FC<StudentSelectModalProps> = ({
 }) => {
   const [selectedName, setSelectedName] = useState<string>(currentStudentName || '');
   const [searchTerm, setSearchTerm] = useState('');
+  const [classFilter, setClassFilter] = useState<'all' | '5a' | '5b'>('all');
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customName, setCustomName] = useState('');
 
   if (!isOpen) return null;
 
-  const filteredStudents = CLASS_STUDENTS.filter(name => 
-    name.toLowerCase().includes(searchTerm.toLowerCase().trim())
-  );
+  const filteredStudents = CLASS_STUDENTS.filter(name => {
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase().trim());
+    if (!matchesSearch) return false;
+    if (classFilter === '5a') return CLASS_5A_STUDENTS.includes(name as any);
+    if (classFilter === '5b') return CLASS_5B_STUDENTS.includes(name as any);
+    return true;
+  });
 
   const handleChooseName = (name: string) => {
     sounds.playPop();
@@ -72,7 +77,7 @@ export const StudentSelectModal: React.FC<StudentSelectModalProps> = ({
               <div>
                 <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[11px] font-bold border border-amber-500/40 mb-1">
                   <GraduationCap className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Klasse 5b • Herr Pfeifer & Frau Escher</span>
+                  <span>NMG 5. Klassen</span>
                 </div>
                 <h2 className="text-xl sm:text-2xl font-display font-extrabold text-amber-200">
                   Wer bist du? Wähle deinen Namen aus!
@@ -96,27 +101,67 @@ export const StudentSelectModal: React.FC<StudentSelectModalProps> = ({
             Dein Forscherheft, Quiz-Punkte und die Urkunde werden genau für dich gespeichert!
           </p>
 
-          {/* Quick Search Bar */}
-          <div className="mt-4 relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Namen schnell suchen..."
-              className="w-full bg-slate-950/80 border border-slate-700 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 rounded-xl pl-9 pr-4 py-2 text-xs sm:text-sm text-white placeholder-slate-500 transition-colors"
-            />
+          {/* Quick Search Bar & Class Filter Tabs */}
+          <div className="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Namen schnell suchen..."
+                className="w-full bg-slate-950/80 border border-slate-700 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 rounded-xl pl-9 pr-4 py-2 text-xs sm:text-sm text-white placeholder-slate-500 transition-colors"
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0 bg-slate-950/60 p-1 rounded-xl border border-slate-800">
+              <button
+                type="button"
+                onClick={() => setClassFilter('all')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  classFilter === 'all'
+                    ? 'bg-amber-500 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Alle ({CLASS_STUDENTS.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setClassFilter('5a')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  classFilter === '5a'
+                    ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-cyan-300'
+                }`}
+              >
+                5a ({CLASS_5A_STUDENTS.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setClassFilter('5b')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  classFilter === '5b'
+                    ? 'bg-amber-400 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-amber-300'
+                }`}
+              >
+                5b ({CLASS_5B_STUDENTS.length})
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Scrollable Student Cards Grid */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-4 text-slate-200 relative z-10">
           <div className="flex items-center justify-between text-xs font-bold text-amber-400 uppercase tracking-wider">
-            <span>Schülerinnen & Schüler der Klasse 5b ({filteredStudents.length}):</span>
+            <span>
+              Schülerinnen & Schüler {classFilter === 'all' ? 'der 5. Klassen' : `der Klasse ${classFilter}`} ({filteredStudents.length}):
+            </span>
             {selectedName && (
               <span className="text-emerald-400 font-semibold normal-case flex items-center gap-1">
                 <CheckCircle className="w-3.5 h-3.5" />
-                Ausgewählt: <strong className="text-white">{selectedName}</strong>
+                Ausgewählt: <strong className="text-white">{selectedName}</strong> ({getStudentDefaultClass(selectedName)})
               </span>
             )}
           </div>
@@ -125,6 +170,7 @@ export const StudentSelectModal: React.FC<StudentSelectModalProps> = ({
             {filteredStudents.map((name, idx) => {
               const isSelected = selectedName === name && !showCustomInput;
               const glyph = HIEROGLYPHS[idx % HIEROGLYPHS.length];
+              const sClass = getStudentDefaultClass(name);
 
               return (
                 <button
@@ -162,8 +208,12 @@ export const StudentSelectModal: React.FC<StudentSelectModalProps> = ({
                     {name}
                   </span>
 
-                  <span className="text-[10px] text-slate-400">
-                    Klasse 5b
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                    sClass === 'Klasse 5a'
+                      ? 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/20'
+                      : 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+                  }`}>
+                    {sClass}
                   </span>
                 </button>
               );
@@ -225,7 +275,7 @@ export const StudentSelectModal: React.FC<StudentSelectModalProps> = ({
         <div className="p-4 sm:p-5 border-t border-slate-800 bg-slate-950/90 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 relative z-10">
           <div className="text-xs text-slate-400 text-center sm:text-left">
             {selectedName ? (
-              <span>Du startest als <strong className="text-amber-300">{selectedName}</strong> (Klasse 5b)</span>
+              <span>Du startest als <strong className="text-amber-300">{selectedName}</strong> ({getStudentDefaultClass(selectedName)})</span>
             ) : (
               <span>Bitte wähle oben deinen Namen aus, um fortzufahren.</span>
             )}

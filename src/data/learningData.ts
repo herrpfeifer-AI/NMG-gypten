@@ -1,4 +1,4 @@
-import { VideoChapter, ClozeItem, TextModuleQuestion, QuizQuestion, Badge, StudentProgress } from '../types';
+import { VideoChapter, ClozeItem, TextModuleQuestion, QuizQuestion, Badge, StudentProgress, getStudentDefaultClass } from '../types';
 
 export const VIDEO_DEFAULT_ID = "L9jJ_EwuaE4"; // Woozle Goozle Altes Ägypten
 export const YOUTUBE_FALLBACK_URL = "https://www.youtube.com/watch?v=L9jJ_EwuaE4";
@@ -441,21 +441,26 @@ export const THEATER_TOPICS: TheaterTopicDefinition[] = [
   }
 ];
 
-// Initial class roster with the 20 official students
+// Initial class roster with the official students of NMG 5. Klassen (5a & 5b)
 export const OFFICIAL_CLASS_NAMES = [
   'Carla', 'Matej', 'Sofia', 'Omar', 'Angelica',
   'Ilian', 'Shukrie', 'Monika', 'Annabelle', 'Adam',
   'Brittany', 'Amelia', 'Melisa', 'Sophia', 'Viola',
-  'Luca', 'Louis', 'Marin', 'Derin', 'Amira'
+  'Luca', 'Louis', 'Marin', 'Derin', 'Amira',
+  'Hanna', 'Alisha', 'Nia', 'Mia', 'Azra',
+  'Venus', 'Shia', 'Anna', 'Jelscha', 'Miray',
+  'Freya', 'Sana', 'Murad', 'Pratham', 'Emin',
+  'Ubejd', 'Cihan', 'Fred'
 ];
 
-export const CLASS_5B_NAME = 'Klasse 5b (Herr Pfeifer & Frau Escher)';
+export const DEFAULT_CLASS_NAME = 'NMG 5. Klassen';
+export const CLASS_5B_NAME = 'NMG 5. Klassen';
 
 export const createFreshClassStudents = (): StudentProgress[] => {
   return OFFICIAL_CLASS_NAMES.map((name, idx): StudentProgress => ({
     id: `stud-${idx + 1}`,
     name,
-    schoolClass: CLASS_5B_NAME,
+    schoolClass: getStudentDefaultClass(name),
     currentStation: 'video',
     videoWatched: false,
     videoNotes: '',
@@ -485,7 +490,7 @@ export const DEMO_STUDENTS: StudentProgress[] = OFFICIAL_CLASS_NAMES.map((name, 
     return {
       id: `stud-${idx + 1}`,
       name: 'Carla',
-      schoolClass: CLASS_5B_NAME,
+      schoolClass: getStudentDefaultClass(name),
       currentStation: 'belohnungen',
       videoWatched: true,
       videoNotes: 'Besonders spannend: Wie die Steine über Kanäle geschifft wurden.',
@@ -523,7 +528,7 @@ export const DEMO_STUDENTS: StudentProgress[] = OFFICIAL_CLASS_NAMES.map((name, 
     return {
       id: `stud-${idx + 1}`,
       name: 'Matej',
-      schoolClass: CLASS_5B_NAME,
+      schoolClass: getStudentDefaultClass(name),
       currentStation: 'belohnungen',
       videoWatched: true,
       videoNotes: 'Pyramidenbau war Teamarbeit!',
@@ -550,7 +555,7 @@ export const DEMO_STUDENTS: StudentProgress[] = OFFICIAL_CLASS_NAMES.map((name, 
     return {
       id: `stud-${idx + 1}`,
       name: 'Sofia',
-      schoolClass: CLASS_5B_NAME,
+      schoolClass: getStudentDefaultClass(name),
       currentStation: 'gruppenarbeit',
       videoWatched: true,
       videoNotes: 'Tutanchamun starb jung mit 18 Jahren.',
@@ -579,7 +584,7 @@ export const DEMO_STUDENTS: StudentProgress[] = OFFICIAL_CLASS_NAMES.map((name, 
     return {
       id: `stud-${idx + 1}`,
       name: 'Omar',
-      schoolClass: CLASS_5B_NAME,
+      schoolClass: getStudentDefaultClass(name),
       currentStation: 'gruppenarbeit',
       videoWatched: true,
       videoNotes: 'Kanäle und Nilflut.',
@@ -606,7 +611,7 @@ export const DEMO_STUDENTS: StudentProgress[] = OFFICIAL_CLASS_NAMES.map((name, 
     return {
       id: `stud-${idx + 1}`,
       name: 'Ilian',
-      schoolClass: CLASS_5B_NAME,
+      schoolClass: getStudentDefaultClass(name),
       currentStation: 'quiz',
       videoWatched: true,
       videoNotes: 'Notizen zu Pyramiden.',
@@ -630,7 +635,7 @@ export const DEMO_STUDENTS: StudentProgress[] = OFFICIAL_CLASS_NAMES.map((name, 
   return {
     id: `stud-${idx + 1}`,
     name,
-    schoolClass: CLASS_5B_NAME,
+    schoolClass: getStudentDefaultClass(name),
     currentStation: 'video',
     videoWatched: false,
     videoNotes: '',

@@ -177,7 +177,7 @@ export const HieroglyphGame: React.FC = () => {
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold border border-amber-500/30 mb-1">
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>Königliche Schreiber-Akademie • Klasse 5b</span>
+                <span>Königliche Schreiber-Akademie • NMG 5. Klassen</span>
               </div>
               <h2 className="text-xl sm:text-2xl font-display font-extrabold text-amber-200">
                 Die Hieroglyphen-Werkstatt
@@ -458,7 +458,7 @@ export const HieroglyphGame: React.FC = () => {
             </div>
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-purple-300">
-                Praktischer Forscher-Auftrag für Klasse 5b
+                Praktischer Forscher-Auftrag für die 5. Klassen
               </span>
               <h3 className="text-xl sm:text-2xl font-display font-extrabold text-amber-200">
                 Zeichne deine persönliche Pharaonen-Kartusche ins Zeichnungsheft!
@@ -511,7 +511,7 @@ export const HieroglyphGame: React.FC = () => {
                 <span>Prachtvoll ausmalen & vorzeigen:</span>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Male den Rand goldgelb wie echtes Pharaonengold an. Die Wasserwellen blau, den Papyrus grün und die Vögel bunt. Zeige deine fertige Meisterkartusche danach <strong>Herr Pfeifer oder Frau Escher</strong>!
+                Male den Rand goldgelb wie echtes Pharaonengold an. Die Wasserwellen blau, den Papyrus grün und die Vögel bunt. Zeige deine fertige Meisterkartusche danach der <strong>Lehrperson</strong>!
               </p>
             </div>
 

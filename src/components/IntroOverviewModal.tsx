@@ -96,7 +96,7 @@ export const IntroOverviewModal: React.FC<IntroOverviewModalProps> = ({
             <div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30 mb-1">
                 <Compass className="w-3.5 h-3.5 text-amber-400" />
-                <span>Klasse 5b • Herr Pfeifer & Frau Escher</span>
+                <span>NMG 5. Klassen</span>
               </div>
               <h2 className="text-xl sm:text-2xl font-display font-extrabold text-amber-200">
                 Die Ägypten-Expedition im Überblick
@@ -125,7 +125,7 @@ export const IntroOverviewModal: React.FC<IntroOverviewModalProps> = ({
                   Erster Schritt nach diesem Überblick:
                 </strong>
                 <span className="text-xs text-slate-300">
-                  Jedes Kind wählt seinen eigenen Namen aus der Klassenliste der Klasse 5b aus.
+                  Jedes Kind wählt seinen eigenen Namen aus der Klassenliste (5a oder 5b) aus.
                 </span>
               </div>
             </div>
@@ -256,7 +256,7 @@ export const IntroOverviewModal: React.FC<IntroOverviewModalProps> = ({
             }}
             className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-bold text-xs sm:text-sm rounded-xl shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95"
           >
-            <span>Weiter zur Namensauswahl (Klasse 5b)</span>
+            <span>Weiter zur Namensauswahl (5. Klassen)</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>

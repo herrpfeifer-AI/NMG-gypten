@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { useProgress } from '../context/ProgressContext';
 import { THEATER_TOPICS, TheaterTopicDefinition } from '../data/learningData';
-import { CLASS_STUDENTS } from '../types';
+import { CLASS_STUDENTS, getStudentDefaultClass } from '../types';
 import { sounds } from '../utils/soundEffects';
 
 interface GroupStationProps {
@@ -302,10 +302,10 @@ export const GroupStation: React.FC<GroupStationProps> = ({ onOpenPhotoWall }) =
               <Users className="w-7 h-7" />
             </div>
             <h3 className="font-display font-bold text-xl text-amber-200">
-              2er-Team Einteilung: Klasse 5b
+              2er-Team Einteilung: NMG 5. Klassen
             </h3>
             <p className="text-xs sm:text-sm text-slate-300">
-              Gehe zur Lehrperson (Herr Pfeifer & Frau Escher). Ihr werdet dort in ein 2er-Team eingeteilt.
+              Gehe zur Lehrperson. Ihr werdet dort in ein 2er-Team eingeteilt.
             </p>
           </div>
 
@@ -346,7 +346,7 @@ export const GroupStation: React.FC<GroupStationProps> = ({ onOpenPhotoWall }) =
                   <option value="">-- Mitschüler:in wählen --</option>
                   {CLASS_STUDENTS.filter(name => name !== partner1).map(name => (
                     <option key={name} value={name}>
-                      {name} (Klasse 5b)
+                      {name} ({getStudentDefaultClass(name)})
                     </option>
                   ))}
                 </select>
@@ -776,7 +776,7 @@ export const GroupStation: React.FC<GroupStationProps> = ({ onOpenPhotoWall }) =
                     </div>
                     <div>
                       <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30 mb-1">
-                        <span>Wichtige Anweisung für Klasse 5b</span>
+                        <span>Wichtige Anweisung für die 5. Klassen</span>
                       </div>
                       <h4 className="font-display font-bold text-lg sm:text-xl text-amber-200">
                         Geht jetzt zur Lehrperson!
@@ -789,7 +789,7 @@ export const GroupStation: React.FC<GroupStationProps> = ({ onOpenPhotoWall }) =
                       Super, euer 2er-Team (<strong>{partner1} & {partner2}</strong>) hat das Theaterstück fertig geprobt!
                     </p>
                     <p>
-                      Geht jetzt <strong>gemeinsam zu Herr Pfeifer oder Frau Escher</strong> nach vorne. Die Lehrperson teilt euer 2er-Team mit einer anderen 2er-Gruppe zu einem <strong>gemeinsamen 4er-Team</strong> zusammen.
+                      Geht jetzt <strong>gemeinsam zur Lehrperson</strong> nach vorne. Die Lehrperson teilt euer 2er-Team mit einer anderen 2er-Gruppe zu einem <strong>gemeinsamen 4er-Team</strong> zusammen.
                     </p>
                   </div>
 
@@ -1040,8 +1040,8 @@ export const GroupStation: React.FC<GroupStationProps> = ({ onOpenPhotoWall }) =
                           Abschluss: Lehrperson aufsuchen & Freischaltcode holen
                         </h4>
                         <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
-                          Sobald beide 2er-Teams ihr Theaterstück zu viert aufgeführt und Feedback ausgetauscht haben, geht ihr <strong>gemeinsam zu viert zur Lehrperson (Herr Pfeifer & Frau Escher)</strong>. 
-                          Sie prüfen euer Feedback und geben euch den geheimen Freischaltcode für eure Urkunde!
+                          Sobald beide 2er-Teams ihr Theaterstück zu viert aufgeführt und Feedback ausgetauscht haben, geht ihr <strong>gemeinsam zu viert zur Lehrperson</strong>. 
+                          Sie prüft euer Feedback und gibt euch den geheimen Freischaltcode für eure Urkunde!
                         </p>
                       </div>
                     </div>

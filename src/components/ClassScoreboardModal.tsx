@@ -101,7 +101,7 @@ export const ClassScoreboardModal: React.FC<ClassScoreboardModalProps> = ({ isOp
             <div>
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold uppercase tracking-wider">
-                  Klasse 5b • Herr Pfeifer & Frau Escher
+                  NMG 5. Klassen (Klasse 5a & 5b)
                 </span>
               </div>
               <h3 className="font-display font-extrabold text-lg sm:text-2xl text-amber-300">
@@ -210,6 +210,9 @@ export const ClassScoreboardModal: React.FC<ClassScoreboardModalProps> = ({ isOp
                         <span className="text-xs text-amber-300 font-medium flex items-center gap-1 bg-slate-950/60 px-2 py-0.5 rounded-lg border border-amber-500/20">
                           <span>{s.rankBadge}</span>
                           <span>{s.rankTitle}</span>
+                        </span>
+                        <span className="text-[10px] text-slate-300 font-semibold bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-700">
+                          {s.schoolClass}
                         </span>
                       </div>
                       

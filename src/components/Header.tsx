@@ -163,12 +163,12 @@ export const Header: React.FC<HeaderProps> = ({
               {isTeacherMode && onResetApp && (
                 <button
                   onClick={() => {
-                    if (window.confirm('Möchtest du wirklich alle Fortschritte aller Schüler:innen der Klasse 5b zurücksetzen und die App von ganz vorne starten?')) {
+                    if (window.confirm('Möchtest du wirklich alle Fortschritte aller Schüler:innen der 5. Klassen (5a & 5b) zurücksetzen und die App von ganz vorne starten?')) {
                       onResetApp();
                     }
                   }}
                   className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-950/80 hover:bg-rose-900 text-rose-200 border border-rose-500/50 flex items-center gap-1.5 shadow-sm transition-all animate-pulse"
-                  title="Alle Fortschritte aller Schüler:innen der Klasse 5b zurücksetzen (Nur Lehrkraft)"
+                  title="Alle Fortschritte aller Schüler:innen der 5. Klassen zurücksetzen (Nur Lehrkraft)"
                 >
                   <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
                   <span className="hidden sm:inline">Neustart (Alle zurücksetzen)</span>
@@ -194,7 +194,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   onClick={onOpenScoreboard}
                   className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 flex items-center gap-1.5 shadow-sm transition-all"
-                  title="Punkte-Übersicht der ganzen Klasse 5b ansehen"
+                  title="Punkte-Übersicht der 5. Klassen ansehen"
                 >
                   <Trophy className="w-3.5 h-3.5 text-amber-400" />
                   <span className="hidden sm:inline">Klassen-Punkte</span>
@@ -366,7 +366,7 @@ export const Header: React.FC<HeaderProps> = ({
                   type="text"
                   value={tempClass}
                   onChange={(e) => setTempClass(e.target.value)}
-                  placeholder="z.B. Klasse 5b (Herr Pfeifer & Frau Escher)"
+                  placeholder="z.B. Klasse 5a oder Klasse 5b"
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
                 />
               </div>

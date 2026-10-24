@@ -373,7 +373,7 @@ export const RewardStation: React.FC<RewardStationProps> = ({
               <div className="text-left">
                 <span className="block text-[10px] text-amber-800">Datum:</span>
                 <span className="font-bold">{todayDate}</span>
-                <span className="block text-[10px] text-amber-800/80 mt-0.5">Klasse 5b</span>
+                <span className="block text-[10px] text-amber-800/80 mt-0.5">{student.schoolClass || 'NMG 5. Klassen'}</span>
               </div>
 
               <div className="text-center">
@@ -382,9 +382,9 @@ export const RewardStation: React.FC<RewardStationProps> = ({
               </div>
 
               <div className="text-right">
-                <span className="block text-[10px] text-amber-800">Klassenlehrpersonen:</span>
-                <span className="font-bold font-child text-xs sm:text-sm block">Herr Pfeifer & Frau Escher</span>
-                <span className="block text-[9px] text-amber-800/80">mit Woozle Goozle & Marc</span>
+                <span className="block text-[10px] text-amber-800">Begutachtet durch:</span>
+                <span className="font-bold font-child text-xs sm:text-sm block">Fachlehrperson NMG</span>
+                <span className="block text-[9px] text-amber-800/80">NMG 5. Klassen</span>
               </div>
             </div>
 

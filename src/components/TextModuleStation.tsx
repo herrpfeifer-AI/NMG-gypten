@@ -12,7 +12,10 @@ import {
   BookOpen, 
   Lock, 
   AlertCircle,
-  Shuffle
+  Shuffle,
+  FastForward,
+  Key,
+  X
 } from 'lucide-react';
 import { useProgress } from '../context/ProgressContext';
 import { CLOZE_STORIES, TEXT_QUESTIONS } from '../data/learningData';
@@ -26,6 +29,7 @@ export const TextModuleStation: React.FC = () => {
     markClozeCompleted, 
     setTextAnswer, 
     markTextCompleted, 
+    skipTextStationWithPassword,
     setCurrentStation,
     teacherSettings,
     allThreeClozesSolved,
@@ -39,6 +43,23 @@ export const TextModuleStation: React.FC = () => {
   const [selectedQuestionId, setSelectedQuestionId] = useState<number>(1);
   const [showClozeValidation, setShowClozeValidation] = useState<boolean>(false);
   const [shuffleSeeds, setShuffleSeeds] = useState<{ [storyId: string]: number }>({});
+
+  // Password skip modal state
+  const [isSkipModalOpen, setIsSkipModalOpen] = useState(false);
+  const [skipPassword, setSkipPassword] = useState('');
+  const [skipError, setSkipError] = useState<string | null>(null);
+
+  const handleSkipSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = skipTextStationWithPassword(skipPassword);
+    if (res.success) {
+      setIsSkipModalOpen(false);
+      setSkipPassword('');
+      setSkipError(null);
+    } else {
+      setSkipError(res.error || 'Falsches Passwort!');
+    }
+  };
 
   const currentStory = CLOZE_STORIES[selectedStoryIndex];
   const currentQuestion = TEXT_QUESTIONS.find(q => q.id === selectedQuestionId) || TEXT_QUESTIONS[0];
@@ -182,7 +203,7 @@ export const TextModuleStation: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setActiveTab('cloze')}
               className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all ${
@@ -204,6 +225,19 @@ export const TextModuleStation: React.FC = () => {
             >
               <HelpCircle className="w-4 h-4" />
               <span>2. Die 8 Verständnisfragen</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsSkipModalOpen(true);
+                setSkipPassword('');
+                setSkipError(null);
+              }}
+              className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 border border-amber-500/40 transition-all hover:scale-102 shadow-sm"
+              title="Aufgabe 2 mit Passwort der Lehrperson überspringen"
+            >
+              <FastForward className="w-4 h-4 text-amber-400" />
+              <span>Station überspringen</span>
             </button>
           </div>
         </div>
@@ -587,26 +621,123 @@ export const TextModuleStation: React.FC = () => {
             <ChevronRight className="w-4 h-4" />
           </button>
         ) : (
-          <button
-            onClick={() => {
-              const firstUnsolvedIdx = CLOZE_STORIES.findIndex(s => {
-                const keys = Object.keys(s.gaps);
-                return !keys.every(k => student.clozeAnswers[`${s.id}_${k}`] === s.gaps[k]);
-              });
-              if (firstUnsolvedIdx !== -1) {
-                setSelectedStoryIndex(firstUnsolvedIdx);
-                setActiveTab('cloze');
-              }
-            }}
-            className="w-full sm:w-auto px-5 py-3 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 font-bold rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 transition-all"
-            title="Zu ungelöstem Rätsel springen"
-          >
-            <Lock className="w-4 h-4 text-amber-400" />
-            <span>Erst alle 3 Rätsel lösen ({solvedStoriesCount}/3)</span>
-          </button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <button
+              onClick={() => {
+                const firstUnsolvedIdx = CLOZE_STORIES.findIndex(s => {
+                  const keys = Object.keys(s.gaps);
+                  return !keys.every(k => student.clozeAnswers[`${s.id}_${k}`] === s.gaps[k]);
+                });
+                if (firstUnsolvedIdx !== -1) {
+                  setSelectedStoryIndex(firstUnsolvedIdx);
+                  setActiveTab('cloze');
+                }
+              }}
+              className="w-full sm:w-auto px-5 py-3 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 font-bold rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 transition-all"
+              title="Zu ungelöstem Rätsel springen"
+            >
+              <Lock className="w-4 h-4 text-amber-400" />
+              <span>Erst alle 3 Rätsel lösen ({solvedStoriesCount}/3)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsSkipModalOpen(true);
+                setSkipPassword('');
+                setSkipError(null);
+              }}
+              className="w-full sm:w-auto px-4 py-3 bg-amber-950/60 hover:bg-amber-900/60 text-amber-200 border border-amber-500/40 font-bold rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-sm"
+              title="Aufgabe 2 mit Passwort der Lehrperson überspringen"
+            >
+              <FastForward className="w-4 h-4 text-amber-400" />
+              <span>Mit Passwort überspringen</span>
+            </button>
+          </div>
         )}
       </div>
 
+      {/* SKIP PASSWORD MODAL FOR AUFGABE 2 */}
+      {isSkipModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border-2 border-amber-500/50 rounded-3xl max-w-md w-full p-6 shadow-2xl relative space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+                  <Key className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-base text-amber-200">
+                    Station 2 überspringen
+                  </h3>
+                  <span className="text-[11px] text-slate-400">Freischaltung für Aufgabe 2 (Textbausteine)</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsSkipModalOpen(false)}
+                className="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Teacher Notice */}
+            <div className="p-3.5 rounded-2xl bg-amber-950/40 border border-amber-500/40 text-xs text-amber-200 space-y-1.5 leading-relaxed">
+              <div className="font-bold flex items-center gap-1.5 text-amber-300">
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Wichtig: Vorher bei der Lehrperson melden!</span>
+              </div>
+              <p className="text-[11px] text-slate-300">
+                Das Überspringen ist <strong>nur erlaubt</strong>, wenn du der Lehrperson mitteilst, dass du die Textbausteine bereits gelöst hast (z.B. im Arbeitsheft oder auf OneNote).
+              </p>
+              <p className="text-[11px] text-amber-300/90 font-medium">
+                Die Lehrkraft gibt dir dann das geheime Passwort zur Freischaltung.
+              </p>
+            </div>
+
+            <form onSubmit={handleSkipSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Passwort der Lehrperson eingeben:
+                </label>
+                <input
+                  type="text"
+                  value={skipPassword}
+                  onChange={(e) => {
+                    setSkipPassword(e.target.value);
+                    setSkipError(null);
+                  }}
+                  placeholder="Passwort eingeben..."
+                  autoFocus
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400 font-mono tracking-wider"
+                />
+                {skipError && (
+                  <p className="text-xs text-rose-400 font-semibold mt-1.5 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>{skipError}</span>
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsSkipModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  disabled={!skipPassword.trim()}
+                  className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-bold rounded-xl text-xs shadow-md hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Freischalten & zu Station 3 springen ✓
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { StudentProgress, StationId, TeacherSettings } from '../types';
-import { DEMO_STUDENTS, QUIZ_QUESTIONS, CLOZE_STORIES, CLASS_5B_NAME, createFreshClassStudents } from '../data/learningData';
+import { StudentProgress, StationId, TeacherSettings, getStudentDefaultClass } from '../types';
+import { DEMO_STUDENTS, QUIZ_QUESTIONS, CLOZE_STORIES, DEFAULT_CLASS_NAME, CLASS_5B_NAME, createFreshClassStudents } from '../data/learningData';
 import { sounds } from '../utils/soundEffects';
 
 interface ProgressContextType {
@@ -23,9 +23,11 @@ interface ProgressContextType {
   markClozeCompleted: () => void;
   setTextAnswer: (qId: number, answer: string) => void;
   markTextCompleted: () => void;
+  skipTextStationWithPassword: (password: string) => { success: boolean; error?: string };
   setQuizAnswer: (qId: number, choice: 'A' | 'B' | 'C' | 'D') => void;
   setQuizOptionAttempt: (qId: number, choice: 'A' | 'B' | 'C' | 'D') => { isCorrect: boolean; attempt: number; showHint: boolean; showSolution: boolean };
   unlockQuizWithRamsesCode: (code: string) => boolean;
+  skipQuizStationWithPassword: (password: string) => { success: boolean; error?: string };
   submitQuiz: () => { score: number; passed: boolean; needsRamses: boolean };
   setGroupPartners: (partner1: string, partner2: string) => void;
   setGroupRole: (role: 'A' | 'B' | 'C' | 'D') => void;
@@ -60,7 +62,7 @@ const STORAGE_KEY_SETTINGS = 'woozle_aegypten_settings_v3';
 const DEFAULT_CURRENT_STUDENT: StudentProgress = {
   id: 'stud-1',
   name: 'Carla',
-  schoolClass: CLASS_5B_NAME,
+  schoolClass: 'Klasse 5b',
   currentStation: 'video',
   videoWatched: false,
   videoNotes: '',
@@ -87,7 +89,7 @@ const DEFAULT_CURRENT_STUDENT: StudentProgress = {
 const DEFAULT_SETTINGS: TeacherSettings = {
   allowStudentSolutionView: true,
   customYoutubeId: 'L9jJ_EwuaE4',
-  classGroup: CLASS_5B_NAME
+  classGroup: DEFAULT_CLASS_NAME
 };
 
 const extractYouTubeId = (urlOrId: string): string => {
@@ -106,7 +108,19 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       const stored = localStorage.getItem(STORAGE_KEY_STUDENTS);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed: StudentProgress[] = JSON.parse(stored);
+        // Ensure students have their proper class (5a or 5b)
+        const synced = parsed.map(s => ({
+          ...s,
+          schoolClass: getStudentDefaultClass(s.name)
+        }));
+        const existingNames = new Set(synced.map(s => s.name.toLowerCase()));
+        const fresh = createFreshClassStudents();
+        const missing = fresh.filter(f => !existingNames.has(f.name.toLowerCase()));
+        if (missing.length > 0) {
+          return [...synced, ...missing];
+        }
+        return synced;
       }
     } catch (e) {
       console.error(e);
@@ -272,6 +286,41 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     triggerCelebration();
   };
 
+  const skipTextStationWithPassword = (password: string): { success: boolean; error?: string } => {
+    const clean = password.trim().toLowerCase();
+    if (clean === 'gize' || clean === 'gizeh') {
+      sounds.playFanfare();
+      triggerCelebration();
+
+      // Automatically fill all cloze gaps with their correct words
+      const filledClozeAnswers: { [gapId: string]: string } = { ...activeStudent.clozeAnswers };
+      CLOZE_STORIES.forEach(story => {
+        Object.entries(story.gaps).forEach(([gapKey, correctWord]) => {
+          filledClozeAnswers[`${story.id}_${gapKey}`] = correctWord;
+        });
+      });
+
+      updateActiveStudent(prev => {
+        const newBadges = prev.badges.includes('badge-text')
+          ? prev.badges
+          : [...prev.badges, 'badge-text'];
+        return {
+          ...prev,
+          clozeAnswers: filledClozeAnswers,
+          clozeCompleted: true,
+          textCompleted: true,
+          badges: newBadges,
+          lastUpdated: 'Station 2 übersprungen mit Passwort (Gize)'
+        };
+      });
+
+      setCurrentStationState('quiz');
+      return { success: true };
+    }
+    sounds.playPop();
+    return { success: false, error: 'Falsches Passwort! Bitte melde dich bei der Lehrperson.' };
+  };
+
   const setQuizAnswer = (qId: number, choice: 'A' | 'B' | 'C' | 'D') => {
     sounds.playPop();
     updateActiveStudent(prev => ({
@@ -346,6 +395,40 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return true;
     }
     return false;
+  };
+
+  const skipQuizStationWithPassword = (password: string): { success: boolean; error?: string } => {
+    const clean = password.trim().toLowerCase();
+    if (clean === 'sphinx') {
+      sounds.playFanfare();
+      triggerCelebration();
+
+      // Automatically answer all quiz questions with 100% correct answers
+      const perfectAnswers: { [questionId: number]: 'A' | 'B' | 'C' | 'D' } = {};
+      QUIZ_QUESTIONS.forEach(q => {
+        perfectAnswers[q.id] = q.correctAnswer;
+      });
+
+      updateActiveStudent(prev => {
+        const newBadges = prev.badges.includes('badge-quiz')
+          ? prev.badges
+          : [...prev.badges, 'badge-quiz'];
+        return {
+          ...prev,
+          quizAnswers: perfectAnswers,
+          quizScore: QUIZ_QUESTIONS.length,
+          quizCompleted: true,
+          quizRamsesUnlocked: true,
+          badges: newBadges,
+          lastUpdated: 'Station 3 übersprungen mit Passwort (Sphinx)'
+        };
+      });
+
+      setCurrentStationState('gruppenarbeit');
+      return { success: true };
+    }
+    sounds.playPop();
+    return { success: false, error: 'Falsches Passwort! Bitte melde dich bei der Lehrperson.' };
   };
 
   const submitQuiz = () => {
@@ -686,7 +769,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         ...DEFAULT_CURRENT_STUDENT,
         id: `stud-${Date.now()}`,
         name: trimmed,
-        schoolClass: CLASS_5B_NAME
+        schoolClass: getStudentDefaultClass(trimmed)
       };
       setStudentsList(prev => [newStud, ...prev]);
       setActiveStudentId(newStud.id);
@@ -732,8 +815,8 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const solvedStoriesCount = CLOZE_STORIES.filter(s => isStorySolved(s, activeStudent.clozeAnswers)).length;
-  // Strictly requires all 3 cloze stories to have their gaps filled correctly
-  const allThreeClozesSolved = solvedStoriesCount === CLOZE_STORIES.length;
+  // Strictly requires all 3 cloze stories to have their gaps filled correctly or marked completed via skip
+  const allThreeClozesSolved = solvedStoriesCount === CLOZE_STORIES.length || activeStudent.textCompleted;
 
   const needsRamsesCode = (activeStudent.quizErrorsCount || 0) >= 3 && !activeStudent.quizRamsesUnlocked;
   const canAccessGroupStation = allThreeClozesSolved && activeStudent.quizCompleted && (!needsRamsesCode || isTeacherMode);
@@ -811,9 +894,11 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         markClozeCompleted,
         setTextAnswer,
         markTextCompleted,
+        skipTextStationWithPassword,
         setQuizAnswer,
         setQuizOptionAttempt,
         unlockQuizWithRamsesCode,
+        skipQuizStationWithPassword,
         submitQuiz,
         setGroupPartners,
         setGroupRole,
